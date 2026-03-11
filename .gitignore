@@ -1,0 +1,41 @@
+# PlatformIO
+.pio/
+.platformio/
+
+# IDEs
+.vscode/
+.idea/
+
+# Build artifacts
+*.o
+*.a
+build/
+
+# AI agent configuration (local only — never commit)
+.claude
+.claude/
+.claude.md
+CLAUDE.md
+CLAUDE.MD
+.cursorrules
+.cursor/
+.github/copilot*
+.aider*
+.continue/
+.codeium/
+.tabnine*
+.sourcery.yaml
+
+# Secrets and credentials
+*.secrets
+.env
+.env.*
+credentials.json
+
+# Temporary files
+*.tmp
+*.bak
+
+# Archives and backups
+*.zip
+*.FCBak
