@@ -23,8 +23,8 @@ A simple PCB hat that sits on top of the Waveshare module's pin header and conne
 
 | Function | GPIO |
 |----------|------|
-| CAN TX   | 4    |
-| CAN RX   | 5    |
+| CAN TX   | 5    |
+| CAN RX   | 4    |
 
 ## Firmware
 

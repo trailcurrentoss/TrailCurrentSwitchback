@@ -7,8 +7,8 @@
 // Forward declare otaUpdate (defined in main.cpp)
 extern OtaUpdate otaUpdate;
 
-#define CAN_TX GPIO_NUM_4
-#define CAN_RX GPIO_NUM_5
+#define CAN_TX GPIO_NUM_5
+#define CAN_RX GPIO_NUM_4
 #define CAN_ID_TOGGLE 0x25
 #define CAN_ID_STATUS 0x28
 
