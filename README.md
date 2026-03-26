@@ -43,7 +43,7 @@ CAN bus runs at **500 kbps** in no-ACK mode.
 |--------|-----------|-------------|
 | `0x00` | RX | **OTA trigger** — 3-byte payload (MAC bytes 3-5) targets a specific device |
 | `0x01` | RX | **WiFi config** — multi-message chunked protocol to provision SSID and password |
-| `0x25` | RX | **Relay toggle** — toggle a single relay (channel 0-7) or all relays (channel 8) |
+| `0x25` | RX | **Relay toggle** — toggle a single relay (channel 0-7) or set all relays (channel >= 8, byte 2 = on/off) |
 | `0x28` | TX | **Status broadcast** — 1-byte bitmask (bits 0-7 = relay states), sent at ~30 Hz |
 
 ### WiFi Provisioning over CAN
