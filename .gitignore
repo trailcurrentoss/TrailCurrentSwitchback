@@ -1,6 +1,9 @@
-# PlatformIO
-.pio/
-.platformio/
+# ESP-IDF
+build/
+sdkconfig
+sdkconfig.old
+managed_components/
+dependencies.lock
 
 # IDEs
 .vscode/
@@ -9,7 +12,9 @@
 # Build artifacts
 *.o
 *.a
-build/
+*.elf
+*.bin
+*.map
 
 # AI agent configuration (local only — never commit)
 .claude
