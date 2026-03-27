@@ -58,8 +58,9 @@ static const gpio_num_t DIN_PINS[NUM_DIN] = {
 // CAN protocol IDs
 #define CAN_ID_OTA              0x00
 #define CAN_ID_WIFI_CONFIG      0x01
-#define CAN_ID_TOGGLE           0x25
-#define CAN_ID_STATUS           0x28
+#define CAN_ID_DISCOVERY_TRIGGER 0x02
+#define CAN_ID_TOGGLE_BASE      0x25   // + SWITCHBACK_ADDRESS → 0x25-0x27
+#define CAN_ID_STATUS_BASE      0x28   // + SWITCHBACK_ADDRESS → 0x28-0x2A
 
 // CAN baud rate
 #define CAN_BAUD_RATE           500  // kbps

@@ -2,6 +2,7 @@
 #include "board.h"
 #include "relay.h"
 #include "wifi_config.h"
+#include "discovery.h"
 #include "esp_log.h"
 #include "esp_mac.h"
 #include "esp_timer.h"
@@ -10,6 +11,14 @@
 #include "freertos/task.h"
 
 static const char *TAG = "can";
+
+// Module address (0-2) — set at build time: idf.py build -DSWITCHBACK_ADDRESS=1
+#ifndef SWITCHBACK_ADDRESS
+#define SWITCHBACK_ADDRESS 0
+#endif
+#if SWITCHBACK_ADDRESS < 0 || SWITCHBACK_ADDRESS > 2
+#error "SWITCHBACK_ADDRESS must be 0-2"
+#endif
 
 #define STATUS_TX_INTERVAL_MS  33    // ~30 Hz
 #define TX_PROBE_INTERVAL_MS   2000  // slow probe when no peers detected
@@ -46,8 +55,10 @@ esp_err_t can_handler_init(void)
         return ret;
     }
 
-    ESP_LOGI(TAG, "CAN bus initialized (500 kbps, NORMAL, TX=%d RX=%d)",
-             CAN_TX_PIN, CAN_RX_PIN);
+    ESP_LOGI(TAG, "CAN bus initialized (500 kbps, NORMAL, TX=%d RX=%d, addr=%d, toggle=0x%02X, status=0x%02X)",
+             CAN_TX_PIN, CAN_RX_PIN, SWITCHBACK_ADDRESS,
+             CAN_ID_TOGGLE_BASE + SWITCHBACK_ADDRESS,
+             CAN_ID_STATUS_BASE + SWITCHBACK_ADDRESS);
     return ESP_OK;
 }
 
@@ -132,7 +143,11 @@ void can_handler_task(void *arg)
                     }
                     break;
 
-                case CAN_ID_TOGGLE:
+                case CAN_ID_DISCOVERY_TRIGGER:
+                    discovery_handle_trigger();
+                    break;
+
+                case (CAN_ID_TOGGLE_BASE + SWITCHBACK_ADDRESS):
                     if (msg.data_length_code >= 1) {
                         uint8_t ch = msg.data[0];
                         if (ch < NUM_RELAYS) {
@@ -159,7 +174,7 @@ void can_handler_task(void *arg)
             last_tx_us = now;
 
             twai_message_t tx_msg = {
-                .identifier = CAN_ID_STATUS,
+                .identifier = CAN_ID_STATUS_BASE + SWITCHBACK_ADDRESS,
                 .data_length_code = 1,
                 .data = { relay_get_states() },
             };

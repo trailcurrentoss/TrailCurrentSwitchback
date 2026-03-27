@@ -2,10 +2,15 @@
 #include "relay.h"
 #include "can_handler.h"
 #include "wifi_config.h"
+#include "discovery.h"
 #include "esp_log.h"
 #include "driver/gpio.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+
+#ifndef SWITCHBACK_ADDRESS
+#define SWITCHBACK_ADDRESS 0
+#endif
 
 static const char *TAG = "main";
 
@@ -48,6 +53,14 @@ void app_main(void)
 
     // Initialize digital inputs
     init_digital_inputs();
+
+    // Initialize discovery (must be after wifi_config_init)
+    discovery_init();
+
+    ESP_LOGI(TAG, "Switchback address: %d (Toggle CAN: 0x%02X, Status CAN: 0x%02X)",
+             SWITCHBACK_ADDRESS,
+             CAN_ID_TOGGLE_BASE + SWITCHBACK_ADDRESS,
+             CAN_ID_STATUS_BASE + SWITCHBACK_ADDRESS);
 
     // Initialize CAN bus
     ESP_ERROR_CHECK(can_handler_init());
