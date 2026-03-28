@@ -70,5 +70,5 @@ void app_main(void)
     ESP_LOGI(TAG, "=== Setup Complete ===");
 
     // Run CAN handler on a dedicated task
-    xTaskCreatePinnedToCore(can_handler_task, "can_task", 4096, NULL, 5, NULL, 0);
+    xTaskCreatePinnedToCore(can_handler_task, "can_task", 4096, NULL, 5, NULL, 1);
 }
