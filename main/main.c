@@ -3,6 +3,7 @@
 #include "can_handler.h"
 #include "wifi_config.h"
 #include "discovery.h"
+#include "ota.h"
 #include "esp_log.h"
 #include "driver/gpio.h"
 #include "freertos/FreeRTOS.h"
@@ -54,8 +55,9 @@ void app_main(void)
     // Initialize digital inputs
     init_digital_inputs();
 
-    // Initialize discovery (must be after wifi_config_init)
+    // Initialize discovery and OTA (must be after wifi_config_init)
     discovery_init();
+    ota_init();
 
     ESP_LOGI(TAG, "Switchback address: %d (Toggle CAN: 0x%02X, Status CAN: 0x%02X)",
              SWITCHBACK_ADDRESS,

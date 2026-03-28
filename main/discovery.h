@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <stdbool.h>
 
 // Discovery window duration (3 minutes)
 #define DISCOVERY_TIMEOUT_MS 180000
@@ -18,4 +19,10 @@ void discovery_init(void);
  * and waits for Headwaters to confirm registration.
  */
 void discovery_handle_trigger(void);
+
+/**
+ * Check whether discovery is currently in progress.
+ * Used by OTA to enforce mutual exclusion.
+ */
+bool discovery_is_running(void);
 

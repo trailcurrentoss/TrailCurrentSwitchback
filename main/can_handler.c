@@ -3,8 +3,8 @@
 #include "relay.h"
 #include "wifi_config.h"
 #include "discovery.h"
+#include "ota.h"
 #include "esp_log.h"
-#include "esp_mac.h"
 #include "esp_timer.h"
 #include "driver/twai.h"
 #include "freertos/FreeRTOS.h"
@@ -22,20 +22,6 @@ static const char *TAG = "can";
 
 #define STATUS_TX_INTERVAL_MS  33    // ~30 Hz
 #define TX_PROBE_INTERVAL_MS   2000  // slow probe when no peers detected
-
-static void handle_ota_trigger(const uint8_t *data)
-{
-    uint8_t mac[6];
-    esp_read_mac(mac, ESP_MAC_WIFI_STA);
-
-    // Compare last 3 bytes of MAC
-    if (data[0] == mac[3] && data[1] == mac[4] && data[2] == mac[5]) {
-        ESP_LOGI(TAG, "OTA trigger matched — OTA not yet implemented in ESP-IDF port");
-        // TODO: implement esp_https_ota based OTA
-    } else {
-        ESP_LOGD(TAG, "OTA trigger ignored (MAC mismatch)");
-    }
-}
 
 esp_err_t can_handler_init(void)
 {
@@ -133,7 +119,7 @@ void can_handler_task(void *arg)
                 switch (msg.identifier) {
                 case CAN_ID_OTA:
                     if (msg.data_length_code >= 3) {
-                        handle_ota_trigger(msg.data);
+                        ota_handle_trigger(msg.data, msg.data_length_code);
                     }
                     break;
 
