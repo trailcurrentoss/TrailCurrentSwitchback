@@ -43,8 +43,15 @@ CAN bus runs at **500 kbps** in no-ACK mode.
 |--------|-----------|-------------|
 | `0x00` | RX | **OTA trigger** — 3-byte payload (MAC bytes 3-5) targets a specific device |
 | `0x01` | RX | **WiFi config** — multi-message chunked protocol to provision SSID and password |
-| `0x25` | RX | **Relay toggle** — toggle a single relay (channel 0-7) or set all relays (channel >= 8, byte 2 = on/off) |
-| `0x28` | TX | **Status broadcast** — 1-byte bitmask (bits 0-7 = relay states), sent at ~30 Hz |
+| `0x25 + addr` | RX | **Relay toggle** — toggle a single relay (channel 0-7) or set all relays (channel >= 8, byte 2 = on/off) |
+| `0x28 + addr` | TX | **Status broadcast** — 1-byte bitmask (bits 0-7 = relay states), sent at ~30 Hz |
+
+Up to 3 Switchback modules can share the same CAN bus. CAN IDs are offset by the `SWITCHBACK_ADDRESS` build flag:
+
+| Base ID | Addr 0 | Addr 1 | Addr 2 | Description |
+|---------|--------|--------|--------|-------------|
+| 0x25 | 0x25 | 0x26 | 0x27 | Relay toggle (RX) |
+| 0x28 | 0x28 | 0x29 | 0x2A | Status broadcast (TX) |
 
 ### WiFi Provisioning over CAN
 
@@ -61,6 +68,11 @@ A 5-second timeout resets the state if the sequence is not completed.
 
 The firmware supports over-the-air updates via WiFi. An OTA trigger message on CAN ID `0x00` with the device's MAC address (bytes 3-5) puts the device into OTA mode. The flash partition table supports dual-OTA (app0/app1) for safe rollback.
 
+When updating a specific address variant, use the matching binary:
+```bash
+curl -X POST http://esp32-XXYYZZ.local/ota --data-binary @build/switchback_addr0.bin
+```
+
 ## Building
 
 ### Prerequisites
@@ -75,6 +87,51 @@ idf.py build
 idf.py -p /dev/ttyACM0 flash monitor
 ```
 
+### Multi-Instance Addressing
+
+Up to 3 Switchback modules can share the same CAN bus. Each module is built with a unique address:
+
+```bash
+idf.py build                        # Address 0 (default)
+idf.py build -DSWITCHBACK_ADDRESS=1  # Address 1
+idf.py build -DSWITCHBACK_ADDRESS=2  # Address 2
+```
+
+#### Building All Variants
+
+Use `build-all.sh` to build all 3 address variants in a single run:
+
+```bash
+./build-all.sh
+```
+
+This produces:
+
+```
+build/switchback_addr0.bin   # Address 0
+build/switchback_addr1.bin   # Address 1
+build/switchback_addr2.bin   # Address 2
+```
+
+#### Creating a GitHub Release
+
+After building all variants, upload all 3 binaries as release assets:
+
+```bash
+git tag -a v1.0.0 -m "Firmware release v1.0.0"
+git push origin v1.0.0
+
+gh release create v1.0.0 \
+  build/switchback_addr0.bin \
+  build/switchback_addr1.bin \
+  build/switchback_addr2.bin \
+  --repo trailcurrentoss/TrailCurrentSwitchback \
+  --title "v1.0.0" \
+  --notes "Firmware release v1.0.0"
+```
+
+The Headwaters deployment system and the web-based firmware installer both expect these 3 files per release.
+
 ## Project Structure
 
 ```
@@ -84,9 +141,12 @@ TrailCurrentSwitchback/
 │   ├── board.h             # Pin definitions for ESP32-S3-ETH-8DI-8RO-C
 │   ├── relay.h / relay.c   # TCA9554 I2C relay driver (8 channels)
 │   ├── can_handler.h / .c  # CAN protocol and message handling
-│   └── wifi_config.h / .c  # WiFi credential storage and CAN provisioning
+│   ├── wifi_config.h / .c  # WiFi credential storage and CAN provisioning
+│   ├── discovery.h / .c    # mDNS self-discovery and Headwaters registration
+│   └── ota.h / ota.c       # OTA firmware updates via WiFi
 ├── CMakeLists.txt          # Top-level ESP-IDF project file
 ├── partitions.csv          # Custom flash partition table (dual OTA)
+├── build-all.sh            # Build all 3 address variants (addr 0-2)
 └── sdkconfig.defaults      # Default SDK configuration
 ```
 
