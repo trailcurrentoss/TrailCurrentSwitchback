@@ -12,12 +12,12 @@ static uint8_t relay_states = 0x00;
 static esp_err_t tca9554_write_reg(uint8_t reg, uint8_t val)
 {
     uint8_t buf[2] = {reg, val};
-    return i2c_master_transmit(tca9554_dev, buf, sizeof(buf), -1);
+    return i2c_master_transmit(tca9554_dev, buf, sizeof(buf), 100);
 }
 
 static esp_err_t tca9554_read_reg(uint8_t reg, uint8_t *val)
 {
-    esp_err_t ret = i2c_master_transmit_receive(tca9554_dev, &reg, 1, val, 1, -1);
+    esp_err_t ret = i2c_master_transmit_receive(tca9554_dev, &reg, 1, val, 1, 100);
     return ret;
 }
 
