@@ -68,7 +68,8 @@ A 5-second timeout resets the state if the sequence is not completed.
 
 The firmware supports over-the-air updates via WiFi. An OTA trigger message on CAN ID `0x00` with the device's MAC address (bytes 3-5) puts the device into OTA mode. The flash partition table supports dual-OTA (app0/app1) for safe rollback.
 
-When updating a specific address variant, use the matching binary:
+Always use the app-only binary (`switchback_addr{N}.bin`) for OTA, never the merged binary. The merged binary starts with the bootloader, not an app header, and would fail the `esp_ota_end` validation.
+
 ```bash
 curl -X POST http://esp32-XXYYZZ.local/ota --data-binary @build/switchback_addr0.bin
 ```
@@ -105,17 +106,18 @@ Use `build-all.sh` to build all 3 address variants in a single run:
 ./build-all.sh
 ```
 
-This produces:
+This produces two binaries per address — one for OTA updates, one for the web flasher:
 
-```
-build/switchback_addr0.bin   # Address 0
-build/switchback_addr1.bin   # Address 1
-build/switchback_addr2.bin   # Address 2
-```
+| File | Contents | Used By |
+|------|----------|---------|
+| `build/switchback_addr{N}.bin` | Application image only | Headwaters OTA (`deploy.sh`, `ota.js`), direct `curl` uploads |
+| `build/switchback_addr{N}_merged.bin` | Bootloader + partition table + OTA data + application | Web flasher (full flash at 0x0) |
+
+The two binary types exist because OTA and the web flasher write to different targets. Headwaters OTA sends the binary to the device's `/ota` HTTP endpoint, which calls `esp_ota_write` to write it to a single app partition. That function validates the image as an application — a merged binary starts with the bootloader instead of an app header, so it would fail validation. The web flasher writes the entire flash contents starting at offset 0x0, so it needs all partitions combined into one file.
 
 #### Creating a GitHub Release
 
-After building all variants, upload all 3 binaries as release assets:
+After building all variants, attach all 6 binaries (3 app-only + 3 merged) as release assets:
 
 ```bash
 git tag -a v1.0.0 -m "Firmware release v1.0.0"
@@ -125,12 +127,15 @@ gh release create v1.0.0 \
   build/switchback_addr0.bin \
   build/switchback_addr1.bin \
   build/switchback_addr2.bin \
+  build/switchback_addr0_merged.bin \
+  build/switchback_addr1_merged.bin \
+  build/switchback_addr2_merged.bin \
   --repo trailcurrentoss/TrailCurrentSwitchback \
   --title "v1.0.0" \
   --notes "Firmware release v1.0.0"
 ```
 
-The Headwaters deployment system and the web-based firmware installer both expect these 3 files per release.
+Both the Headwaters deployment system and the web flasher pull from GitHub releases. The web flasher matches `_merged.bin` files by name for full-flash use. The Headwaters deployment system (`fetch-firmware.sh`) downloads the app-only `switchback_addr{N}.bin` files for OTA delivery.
 
 ## Project Structure
 
