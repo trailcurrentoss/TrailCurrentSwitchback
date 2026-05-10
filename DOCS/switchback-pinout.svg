@@ -1,0 +1,382 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 780" font-family="Inter, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arr-di" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#1a7a8a"/>
+    </marker>
+    <marker id="arr-can-h" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#ffc107"/>
+    </marker>
+    <marker id="arr-can-l" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#52a441"/>
+    </marker>
+    <marker id="arr-pwr" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#ff5453"/>
+    </marker>
+    <marker id="arr-relay" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#b86e00"/>
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1100" height="780" fill="#f8f9fa"/>
+
+  <!-- Title bar -->
+  <rect width="1100" height="54" fill="#ffffff"/>
+  <rect y="54" width="1100" height="3" fill="#52a441"/>
+  <text x="24" y="35" font-size="16" font-weight="700" fill="#52a441">TrailCurrent Switchback</text>
+  <text x="285" y="35" font-size="13" fill="#495057">Waveshare ESP32-S3-ETH-8DI-8RO-C — Reed-Switch / Digital-Input Wiring</text>
+
+  <!-- =============== BOARD (top view) =============== -->
+  <rect x="120" y="92" width="860" height="200" fill="#3d7d31" stroke="#2c5a23" stroke-width="2" rx="6"/>
+  <text x="550" y="112" text-anchor="middle" font-size="11" fill="#dcedd9" font-weight="600">ESP32-S3-ETH-8DI-8RO-C — Top View</text>
+
+  <!-- Top edge connectors (left → right): CAN | PWR | USB | BOOT | COM | DGND | DI1..DI8 | RGB | ETH | ANT -->
+
+  <!-- CAN H/L (yellow over green) -->
+  <rect x="130" y="120" width="30" height="22" fill="#ffc107" stroke="#b86e00" stroke-width="1.5" rx="2"/>
+  <text x="145" y="135" text-anchor="middle" font-size="7" fill="#212529" font-weight="700">CAN-H</text>
+  <rect x="130" y="144" width="30" height="22" fill="#52a441" stroke="#3d7d31" stroke-width="1.5" rx="2"/>
+  <text x="145" y="159" text-anchor="middle" font-size="7" fill="#fff" font-weight="700">CAN-L</text>
+
+  <!-- 7-36V power -->
+  <rect x="170" y="120" width="46" height="22" fill="#ff5453" stroke="#cc4242" stroke-width="1.5" rx="2"/>
+  <text x="193" y="135" text-anchor="middle" font-size="7.5" fill="#fff" font-weight="700">+ 7-36V</text>
+  <rect x="170" y="144" width="46" height="22" fill="#1a1a1a" stroke="#000" stroke-width="1.5" rx="2"/>
+  <text x="193" y="159" text-anchor="middle" font-size="7.5" fill="#fff" font-weight="700">− GND</text>
+
+  <!-- USB-C -->
+  <rect x="226" y="125" width="36" height="42" fill="#6c757d" stroke="#495057" stroke-width="1.5" rx="2"/>
+  <text x="244" y="151" text-anchor="middle" font-size="8" fill="#fff" font-weight="600">USB-C</text>
+
+  <!-- BOOT button -->
+  <circle cx="282" cy="146" r="9" fill="#dee2e6" stroke="#adb5bd" stroke-width="1.5"/>
+  <text x="282" y="149" text-anchor="middle" font-size="6.5" fill="#495057" font-weight="700">BOOT</text>
+
+  <!-- COM (isolated +V) -->
+  <rect x="304" y="125" width="32" height="42" fill="#1a7a8a" stroke="#0f5e6c" stroke-width="1.5" rx="2"/>
+  <text x="320" y="146" text-anchor="middle" font-size="9" letter-spacing="0.4" fill="#fff" font-weight="700">COM</text>
+  <text x="320" y="158" text-anchor="middle" font-size="6.5" fill="#d9f9ff">iso V+</text>
+
+  <!-- DGND (isolated GND — dry-contact return) -->
+  <rect x="338" y="125" width="34" height="42" fill="#1a1a1a" stroke="#000" stroke-width="1.5" rx="2"/>
+  <text x="355" y="146" text-anchor="middle" font-size="9" letter-spacing="0.2" fill="#fff" font-weight="700">DGND</text>
+  <text x="355" y="158" text-anchor="middle" font-size="6.5" fill="#dee2e6">iso GND</text>
+
+  <!-- DI1..DI8 (blue terminals, GPIO 4-11) -->
+  <g font-family="Inter, Helvetica, Arial, sans-serif">
+    <!-- DI1 -->
+    <rect x="376" y="125" width="30" height="42" fill="#1a7a8a" stroke="#0f5e6c" stroke-width="1.5" rx="2"/>
+    <text x="391" y="143" text-anchor="middle" font-size="9" fill="#fff" font-weight="700">DI1</text>
+    <text x="391" y="158" text-anchor="middle" font-size="7" fill="#d9f9ff">GPIO4</text>
+    <!-- DI2 -->
+    <rect x="408" y="125" width="30" height="42" fill="#1a7a8a" stroke="#0f5e6c" stroke-width="1.5" rx="2"/>
+    <text x="423" y="143" text-anchor="middle" font-size="9" fill="#fff" font-weight="700">DI2</text>
+    <text x="423" y="158" text-anchor="middle" font-size="7" fill="#d9f9ff">GPIO5</text>
+    <!-- DI3 -->
+    <rect x="440" y="125" width="30" height="42" fill="#1a7a8a" stroke="#0f5e6c" stroke-width="1.5" rx="2"/>
+    <text x="455" y="143" text-anchor="middle" font-size="9" fill="#fff" font-weight="700">DI3</text>
+    <text x="455" y="158" text-anchor="middle" font-size="7" fill="#d9f9ff">GPIO6</text>
+    <!-- DI4 -->
+    <rect x="472" y="125" width="30" height="42" fill="#1a7a8a" stroke="#0f5e6c" stroke-width="1.5" rx="2"/>
+    <text x="487" y="143" text-anchor="middle" font-size="9" fill="#fff" font-weight="700">DI4</text>
+    <text x="487" y="158" text-anchor="middle" font-size="7" fill="#d9f9ff">GPIO7</text>
+    <!-- DI5 -->
+    <rect x="504" y="125" width="30" height="42" fill="#1a7a8a" stroke="#0f5e6c" stroke-width="1.5" rx="2"/>
+    <text x="519" y="143" text-anchor="middle" font-size="9" fill="#fff" font-weight="700">DI5</text>
+    <text x="519" y="158" text-anchor="middle" font-size="7" fill="#d9f9ff">GPIO8</text>
+    <!-- DI6 -->
+    <rect x="536" y="125" width="30" height="42" fill="#1a7a8a" stroke="#0f5e6c" stroke-width="1.5" rx="2"/>
+    <text x="551" y="143" text-anchor="middle" font-size="9" fill="#fff" font-weight="700">DI6</text>
+    <text x="551" y="158" text-anchor="middle" font-size="7" fill="#d9f9ff">GPIO9</text>
+    <!-- DI7 -->
+    <rect x="568" y="125" width="30" height="42" fill="#1a7a8a" stroke="#0f5e6c" stroke-width="1.5" rx="2"/>
+    <text x="583" y="143" text-anchor="middle" font-size="9" fill="#fff" font-weight="700">DI7</text>
+    <text x="583" y="158" text-anchor="middle" font-size="6.5" fill="#d9f9ff">GPIO10</text>
+    <!-- DI8 -->
+    <rect x="600" y="125" width="30" height="42" fill="#1a7a8a" stroke="#0f5e6c" stroke-width="1.5" rx="2"/>
+    <text x="615" y="143" text-anchor="middle" font-size="9" fill="#fff" font-weight="700">DI8</text>
+    <text x="615" y="158" text-anchor="middle" font-size="6.5" fill="#d9f9ff">GPIO11</text>
+  </g>
+
+  <!-- RGB LED -->
+  <rect x="640" y="125" width="34" height="42" fill="#dee2e6" stroke="#adb5bd" stroke-width="1.5" rx="2"/>
+  <text x="657" y="146" text-anchor="middle" font-size="8" fill="#495057" font-weight="700">RGB</text>
+  <text x="657" y="158" text-anchor="middle" font-size="6.5" fill="#6c757d">GPIO38</text>
+
+  <!-- Ethernet RJ45 -->
+  <rect x="690" y="120" width="80" height="50" fill="#6c757d" stroke="#495057" stroke-width="1.5" rx="2"/>
+  <text x="730" y="142" text-anchor="middle" font-size="9" fill="#fff" font-weight="700">ETH (RJ45)</text>
+  <text x="730" y="156" text-anchor="middle" font-size="7" fill="#dee2e6">W5500 / PoE</text>
+
+  <!-- Antenna -->
+  <rect x="780" y="125" width="38" height="42" fill="#dee2e6" stroke="#adb5bd" stroke-width="1.5" rx="2"/>
+  <text x="799" y="146" text-anchor="middle" font-size="8" fill="#495057" font-weight="700">ANT</text>
+  <text x="799" y="158" text-anchor="middle" font-size="6.5" fill="#6c757d">WiFi/BT</text>
+
+  <!-- ESP32-S3 chip -->
+  <rect x="488" y="206" width="124" height="60" fill="#212529" stroke="#1a1a1a" stroke-width="1" rx="2"/>
+  <text x="550" y="232" text-anchor="middle" font-size="9" fill="#dcedd9">ESP32-S3</text>
+  <text x="550" y="246" text-anchor="middle" font-size="9" fill="#dcedd9">WROOM</text>
+  <text x="550" y="260" text-anchor="middle" font-size="7" fill="#b8d4ab">+ TCA9554 + W5500</text>
+
+  <!-- Bottom edge: 8 relay channels (right→left so CH1 is rightmost, matching real silk) -->
+  <g>
+    <!-- Helper sub-block for each channel: a rectangle with NC | COM | NO -->
+    <!-- CH8 (leftmost) -->
+    <rect x="146" y="226" width="80" height="56" fill="#b86e00" stroke="#8a5200" stroke-width="1.5" rx="3"/>
+    <text x="186" y="244" text-anchor="middle" font-size="9" fill="#fff" font-weight="700">CH8</text>
+    <text x="160" y="270" text-anchor="middle" font-size="7" fill="#fff">NC</text>
+    <text x="186" y="270" text-anchor="middle" font-size="7" fill="#fff">COM</text>
+    <text x="212" y="270" text-anchor="middle" font-size="7" fill="#fff">NO</text>
+    <!-- CH7 -->
+    <rect x="234" y="226" width="80" height="56" fill="#b86e00" stroke="#8a5200" stroke-width="1.5" rx="3"/>
+    <text x="274" y="244" text-anchor="middle" font-size="9" fill="#fff" font-weight="700">CH7</text>
+    <text x="248" y="270" text-anchor="middle" font-size="7" fill="#fff">NC</text>
+    <text x="274" y="270" text-anchor="middle" font-size="7" fill="#fff">COM</text>
+    <text x="300" y="270" text-anchor="middle" font-size="7" fill="#fff">NO</text>
+    <!-- CH6 -->
+    <rect x="322" y="226" width="80" height="56" fill="#b86e00" stroke="#8a5200" stroke-width="1.5" rx="3"/>
+    <text x="362" y="244" text-anchor="middle" font-size="9" fill="#fff" font-weight="700">CH6</text>
+    <text x="336" y="270" text-anchor="middle" font-size="7" fill="#fff">NC</text>
+    <text x="362" y="270" text-anchor="middle" font-size="7" fill="#fff">COM</text>
+    <text x="388" y="270" text-anchor="middle" font-size="7" fill="#fff">NO</text>
+    <!-- CH5 -->
+    <rect x="410" y="226" width="80" height="56" fill="#b86e00" stroke="#8a5200" stroke-width="1.5" rx="3"/>
+    <text x="450" y="244" text-anchor="middle" font-size="9" fill="#fff" font-weight="700">CH5</text>
+    <text x="424" y="270" text-anchor="middle" font-size="7" fill="#fff">NC</text>
+    <text x="450" y="270" text-anchor="middle" font-size="7" fill="#fff">COM</text>
+    <text x="476" y="270" text-anchor="middle" font-size="7" fill="#fff">NO</text>
+    <!-- CH4 -->
+    <rect x="498" y="226" width="80" height="56" fill="#b86e00" stroke="#8a5200" stroke-width="1.5" rx="3"/>
+    <text x="538" y="244" text-anchor="middle" font-size="9" fill="#fff" font-weight="700">CH4</text>
+    <text x="512" y="270" text-anchor="middle" font-size="7" fill="#fff">NC</text>
+    <text x="538" y="270" text-anchor="middle" font-size="7" fill="#fff">COM</text>
+    <text x="564" y="270" text-anchor="middle" font-size="7" fill="#fff">NO</text>
+    <!-- CH3 -->
+    <rect x="586" y="226" width="80" height="56" fill="#b86e00" stroke="#8a5200" stroke-width="1.5" rx="3"/>
+    <text x="626" y="244" text-anchor="middle" font-size="9" fill="#fff" font-weight="700">CH3</text>
+    <text x="600" y="270" text-anchor="middle" font-size="7" fill="#fff">NC</text>
+    <text x="626" y="270" text-anchor="middle" font-size="7" fill="#fff">COM</text>
+    <text x="652" y="270" text-anchor="middle" font-size="7" fill="#fff">NO</text>
+    <!-- CH2 -->
+    <rect x="674" y="226" width="80" height="56" fill="#b86e00" stroke="#8a5200" stroke-width="1.5" rx="3"/>
+    <text x="714" y="244" text-anchor="middle" font-size="9" fill="#fff" font-weight="700">CH2</text>
+    <text x="688" y="270" text-anchor="middle" font-size="7" fill="#fff">NC</text>
+    <text x="714" y="270" text-anchor="middle" font-size="7" fill="#fff">COM</text>
+    <text x="740" y="270" text-anchor="middle" font-size="7" fill="#fff">NO</text>
+    <!-- CH1 (rightmost) -->
+    <rect x="762" y="226" width="80" height="56" fill="#b86e00" stroke="#8a5200" stroke-width="1.5" rx="3"/>
+    <text x="802" y="244" text-anchor="middle" font-size="9" fill="#fff" font-weight="700">CH1</text>
+    <text x="776" y="270" text-anchor="middle" font-size="7" fill="#fff">NC</text>
+    <text x="802" y="270" text-anchor="middle" font-size="7" fill="#fff">COM</text>
+    <text x="828" y="270" text-anchor="middle" font-size="7" fill="#fff">NO</text>
+  </g>
+
+  <!-- =============== POWER + CAN TAGS =============== -->
+  <rect x="40" y="116" width="74" height="50" fill="#ff5453" stroke="#cc4242" stroke-width="1" rx="4"/>
+  <text x="77" y="135" text-anchor="middle" font-size="10" font-weight="600" fill="#fff">7-36V</text>
+  <text x="77" y="150" text-anchor="middle" font-size="9" fill="#ffe5e5">Power</text>
+  <polyline points="114,135 130,135" fill="none" stroke="#ff5453" stroke-width="2" marker-end="url(#arr-pwr)"/>
+
+  <rect x="990" y="116" width="74" height="50" fill="#52a441" stroke="#3d7d31" stroke-width="1" rx="4"/>
+  <text x="1027" y="134" text-anchor="middle" font-size="10" font-weight="600" fill="#fff">CAN Bus</text>
+  <text x="1027" y="148" text-anchor="middle" font-size="8" fill="#dcedd9">500 kbps</text>
+  <polyline points="990,135 980,135 980,200 130,200 130,168" fill="none" stroke="#52a441" stroke-width="1.5" stroke-dasharray="5,3"/>
+
+  <!-- =============== REED SWITCH WIRING DETAIL =============== -->
+  <rect x="40" y="320" width="500" height="280" fill="#ffffff" stroke="#dee2e6" stroke-width="1.5" rx="6"/>
+  <text x="290" y="345" text-anchor="middle" font-size="13" font-weight="700" fill="#212529">Reed Switch Wiring — Dry Contact Mode</text>
+  <line x1="60" y1="354" x2="520" y2="354" stroke="#dee2e6" stroke-width="1"/>
+
+  <text x="290" y="370" text-anchor="middle" font-size="10" fill="#6c757d">No external supply needed — the board's internal isolated rail biases each opto LED.</text>
+  <text x="290" y="384" text-anchor="middle" font-size="10" fill="#6c757d">Wire each NO reed switch between its <tspan font-weight="700" fill="#1a7a8a">DIn</tspan> terminal and <tspan font-weight="700" fill="#212529">DGND</tspan> — one independent loop per channel.</text>
+
+  <!-- Mini terminal block view (COM | DGND | DI1..DI8) -->
+  <g font-family="Inter, Helvetica, Arial, sans-serif">
+    <text x="58" y="418" font-size="10" fill="#495057" font-weight="600">Terminal block:</text>
+
+    <!-- COM (unused in dry mode) -->
+    <rect x="138" y="406" width="32" height="24" fill="#dee2e6" stroke="#adb5bd" stroke-width="1.5" rx="2"/>
+    <text x="154" y="421" text-anchor="middle" font-size="9" letter-spacing="0.4" fill="#6c757d" font-weight="700">COM</text>
+    <text x="154" y="442" text-anchor="middle" font-size="7" fill="#adb5bd" font-style="italic">(unused for dry)</text>
+
+    <!-- DGND -->
+    <rect x="174" y="406" width="36" height="24" fill="#1a1a1a" stroke="#000" stroke-width="1.5" rx="2"/>
+    <text x="192" y="421" text-anchor="middle" font-size="9" letter-spacing="0.2" fill="#fff" font-weight="700">DGND</text>
+
+    <!-- DI1..DI8 -->
+    <rect x="216" y="406" width="28" height="24" fill="#1a7a8a" stroke="#0f5e6c" stroke-width="1.5" rx="2"/>
+    <text x="230" y="421" text-anchor="middle" font-size="8" fill="#fff" font-weight="700">DI1</text>
+    <rect x="248" y="406" width="28" height="24" fill="#1a7a8a" stroke="#0f5e6c" stroke-width="1.5" rx="2"/>
+    <text x="262" y="421" text-anchor="middle" font-size="8" fill="#fff" font-weight="700">DI2</text>
+    <rect x="280" y="406" width="28" height="24" fill="#1a7a8a" stroke="#0f5e6c" stroke-width="1.5" rx="2"/>
+    <text x="294" y="421" text-anchor="middle" font-size="8" fill="#fff" font-weight="700">DI3</text>
+    <rect x="312" y="406" width="28" height="24" fill="#1a7a8a" stroke="#0f5e6c" stroke-width="1.5" rx="2"/>
+    <text x="326" y="421" text-anchor="middle" font-size="8" fill="#fff" font-weight="700">DI4</text>
+    <rect x="344" y="406" width="28" height="24" fill="#1a7a8a" stroke="#0f5e6c" stroke-width="1.5" rx="2"/>
+    <text x="358" y="421" text-anchor="middle" font-size="8" fill="#fff" font-weight="700">DI5</text>
+    <rect x="376" y="406" width="28" height="24" fill="#1a7a8a" stroke="#0f5e6c" stroke-width="1.5" rx="2"/>
+    <text x="390" y="421" text-anchor="middle" font-size="8" fill="#fff" font-weight="700">DI6</text>
+    <rect x="408" y="406" width="28" height="24" fill="#1a7a8a" stroke="#0f5e6c" stroke-width="1.5" rx="2"/>
+    <text x="422" y="421" text-anchor="middle" font-size="8" fill="#fff" font-weight="700">DI7</text>
+    <rect x="440" y="406" width="28" height="24" fill="#1a7a8a" stroke="#0f5e6c" stroke-width="1.5" rx="2"/>
+    <text x="454" y="421" text-anchor="middle" font-size="8" fill="#fff" font-weight="700">DI8</text>
+  </g>
+
+  <!-- DGND drop wire (left, black) and bottom rail (horizontal, black) -->
+  <line x1="192" y1="430" x2="192" y2="582" stroke="#1a1a1a" stroke-width="2.2"/>
+  <line x1="192" y1="582" x2="468" y2="582" stroke="#1a1a1a" stroke-width="2.2"/>
+  <text x="158" y="500" font-size="9" fill="#212529" font-weight="700" text-anchor="end">DGND rail</text>
+  <text x="158" y="512" font-size="8" fill="#6c757d" text-anchor="end">(isolated GND</text>
+  <text x="158" y="522" font-size="8" fill="#6c757d" text-anchor="end">return path)</text>
+
+  <!-- 8 independent loops: DIn → wire → reed switch (open) → wire → DGND rail -->
+  <g font-family="Inter, Helvetica, Arial, sans-serif">
+    <!-- Channel 1 — DI1 -->
+    <line x1="230" y1="430" x2="230" y2="492" stroke="#1a7a8a" stroke-width="1.5"/>
+    <circle cx="230" cy="495" r="2.4" fill="#1a7a8a"/>
+    <line x1="230" y1="497" x2="244" y2="510" stroke="#212529" stroke-width="1.5"/>
+    <circle cx="230" cy="514" r="2.4" fill="#1a7a8a"/>
+    <line x1="230" y1="517" x2="230" y2="582" stroke="#1a7a8a" stroke-width="1.5"/>
+    <text x="230" y="544" text-anchor="middle" font-size="7" fill="#212529" font-weight="600">RSW1</text>
+
+    <!-- Channel 2 -->
+    <line x1="262" y1="430" x2="262" y2="492" stroke="#1a7a8a" stroke-width="1.5"/>
+    <circle cx="262" cy="495" r="2.4" fill="#1a7a8a"/>
+    <line x1="262" y1="497" x2="276" y2="510" stroke="#212529" stroke-width="1.5"/>
+    <circle cx="262" cy="514" r="2.4" fill="#1a7a8a"/>
+    <line x1="262" y1="517" x2="262" y2="582" stroke="#1a7a8a" stroke-width="1.5"/>
+    <text x="262" y="544" text-anchor="middle" font-size="7" fill="#212529" font-weight="600">RSW2</text>
+
+    <!-- Channel 3 -->
+    <line x1="294" y1="430" x2="294" y2="492" stroke="#1a7a8a" stroke-width="1.5"/>
+    <circle cx="294" cy="495" r="2.4" fill="#1a7a8a"/>
+    <line x1="294" y1="497" x2="308" y2="510" stroke="#212529" stroke-width="1.5"/>
+    <circle cx="294" cy="514" r="2.4" fill="#1a7a8a"/>
+    <line x1="294" y1="517" x2="294" y2="582" stroke="#1a7a8a" stroke-width="1.5"/>
+    <text x="294" y="544" text-anchor="middle" font-size="7" fill="#212529" font-weight="600">RSW3</text>
+
+    <!-- Channel 4 -->
+    <line x1="326" y1="430" x2="326" y2="492" stroke="#1a7a8a" stroke-width="1.5"/>
+    <circle cx="326" cy="495" r="2.4" fill="#1a7a8a"/>
+    <line x1="326" y1="497" x2="340" y2="510" stroke="#212529" stroke-width="1.5"/>
+    <circle cx="326" cy="514" r="2.4" fill="#1a7a8a"/>
+    <line x1="326" y1="517" x2="326" y2="582" stroke="#1a7a8a" stroke-width="1.5"/>
+    <text x="326" y="544" text-anchor="middle" font-size="7" fill="#212529" font-weight="600">RSW4</text>
+
+    <!-- Channel 5 -->
+    <line x1="358" y1="430" x2="358" y2="492" stroke="#1a7a8a" stroke-width="1.5"/>
+    <circle cx="358" cy="495" r="2.4" fill="#1a7a8a"/>
+    <line x1="358" y1="497" x2="372" y2="510" stroke="#212529" stroke-width="1.5"/>
+    <circle cx="358" cy="514" r="2.4" fill="#1a7a8a"/>
+    <line x1="358" y1="517" x2="358" y2="582" stroke="#1a7a8a" stroke-width="1.5"/>
+    <text x="358" y="544" text-anchor="middle" font-size="7" fill="#212529" font-weight="600">RSW5</text>
+
+    <!-- Channel 6 -->
+    <line x1="390" y1="430" x2="390" y2="492" stroke="#1a7a8a" stroke-width="1.5"/>
+    <circle cx="390" cy="495" r="2.4" fill="#1a7a8a"/>
+    <line x1="390" y1="497" x2="404" y2="510" stroke="#212529" stroke-width="1.5"/>
+    <circle cx="390" cy="514" r="2.4" fill="#1a7a8a"/>
+    <line x1="390" y1="517" x2="390" y2="582" stroke="#1a7a8a" stroke-width="1.5"/>
+    <text x="390" y="544" text-anchor="middle" font-size="7" fill="#212529" font-weight="600">RSW6</text>
+
+    <!-- Channel 7 -->
+    <line x1="422" y1="430" x2="422" y2="492" stroke="#1a7a8a" stroke-width="1.5"/>
+    <circle cx="422" cy="495" r="2.4" fill="#1a7a8a"/>
+    <line x1="422" y1="497" x2="436" y2="510" stroke="#212529" stroke-width="1.5"/>
+    <circle cx="422" cy="514" r="2.4" fill="#1a7a8a"/>
+    <line x1="422" y1="517" x2="422" y2="582" stroke="#1a7a8a" stroke-width="1.5"/>
+    <text x="422" y="544" text-anchor="middle" font-size="7" fill="#212529" font-weight="600">RSW7</text>
+
+    <!-- Channel 8 -->
+    <line x1="454" y1="430" x2="454" y2="492" stroke="#1a7a8a" stroke-width="1.5"/>
+    <circle cx="454" cy="495" r="2.4" fill="#1a7a8a"/>
+    <line x1="454" y1="497" x2="468" y2="510" stroke="#212529" stroke-width="1.5"/>
+    <circle cx="454" cy="514" r="2.4" fill="#1a7a8a"/>
+    <line x1="454" y1="517" x2="454" y2="582" stroke="#1a7a8a" stroke-width="1.5"/>
+    <text x="454" y="544" text-anchor="middle" font-size="7" fill="#212529" font-weight="600">RSW8</text>
+  </g>
+
+  <!-- Reed-switch state semantics — placed left-bottom, below DGND-rail label -->
+  <text x="50" y="548" font-size="9" fill="#212529" font-weight="700">Reed = NO type</text>
+  <text x="50" y="562" font-size="8" fill="#6c757d">Magnet present → bit 0 (closed)</text>
+  <text x="50" y="574" font-size="8" fill="#6c757d">Magnet absent → bit 1 (open)</text>
+
+  <!-- =============== CAN BUS PROTOCOL SUMMARY =============== -->
+  <rect x="560" y="320" width="500" height="280" fill="#ffffff" stroke="#dee2e6" stroke-width="1.5" rx="6"/>
+  <text x="810" y="345" text-anchor="middle" font-size="13" font-weight="700" fill="#212529">CAN Bus Messages</text>
+  <line x1="580" y1="354" x2="1040" y2="354" stroke="#dee2e6" stroke-width="1"/>
+
+  <!-- TX section -->
+  <text x="582" y="376" font-size="11" fill="#52a441" font-weight="700">TX (broadcast)</text>
+  <text x="582" y="392" font-size="10" fill="#1a7a8a" font-weight="700">0x12 + addr</text>
+  <text x="668" y="392" font-size="10" fill="#495057">DI broadcast (PicketStatus8/9/10) — 5 Hz, 2 bytes</text>
+  <text x="582" y="406" font-size="9" fill="#6c757d">                byte 0 = DI1-DI8 bitmask · byte 1 = 0x00</text>
+  <text x="582" y="420" font-size="9" fill="#6c757d">                bit i: 1 = open (no magnet) · 0 = closed (magnet)</text>
+
+  <text x="582" y="442" font-size="10" fill="#b86e00" font-weight="700">0x28 + addr</text>
+  <text x="668" y="442" font-size="10" fill="#495057">Relay status — ~30 Hz, 1 byte</text>
+  <text x="582" y="456" font-size="9" fill="#6c757d">                bits 0-7 = relay 1-8 state (1 = on)</text>
+
+  <text x="582" y="478" font-size="10" fill="#495057" font-weight="600">0x04</text>
+  <text x="668" y="478" font-size="10" fill="#495057">Firmware version (on boot, on peer detect)</text>
+
+  <!-- RX section -->
+  <text x="582" y="504" font-size="11" fill="#ff5453" font-weight="700">RX (control)</text>
+  <text x="582" y="520" font-size="10" fill="#b86e00" font-weight="700">0x25 + addr</text>
+  <text x="668" y="520" font-size="10" fill="#495057">Relay toggle (channel 0-7) / set all</text>
+  <text x="582" y="538" font-size="10" fill="#495057" font-weight="600">0x00</text>
+  <text x="668" y="538" font-size="10" fill="#495057">OTA trigger (3-byte MAC suffix)</text>
+  <text x="582" y="554" font-size="10" fill="#495057" font-weight="600">0x01</text>
+  <text x="668" y="554" font-size="10" fill="#495057">WiFi config (multi-message provisioning)</text>
+  <text x="582" y="570" font-size="10" fill="#495057" font-weight="600">0x02</text>
+  <text x="668" y="570" font-size="10" fill="#495057">Discovery trigger (broadcast)</text>
+
+  <text x="810" y="592" text-anchor="middle" font-size="9" fill="#adb5bd" font-style="italic">All IDs are 11-bit standard frames · 500 kbps</text>
+
+  <!-- =============== ADDRESS-TO-CAN-ID MAPPING =============== -->
+  <rect x="40" y="616" width="1020" height="118" fill="#ffffff" stroke="#dee2e6" stroke-width="1.5" rx="6"/>
+  <text x="550" y="638" text-anchor="middle" font-size="12" font-weight="700" fill="#212529">SWITCHBACK_ADDRESS → CAN ID Mapping (build-time)</text>
+
+  <!-- Header row -->
+  <text x="170" y="660" text-anchor="middle" font-size="10" font-weight="700" fill="#495057">Build flag</text>
+  <text x="400" y="660" text-anchor="middle" font-size="10" font-weight="700" fill="#1a7a8a">DI broadcast (TX)</text>
+  <text x="620" y="660" text-anchor="middle" font-size="10" font-weight="700" fill="#b86e00">Relay toggle (RX)</text>
+  <text x="820" y="660" text-anchor="middle" font-size="10" font-weight="700" fill="#b86e00">Relay status (TX)</text>
+  <line x1="60" y1="666" x2="1040" y2="666" stroke="#dee2e6" stroke-width="1"/>
+
+  <!-- Row 0 -->
+  <text x="170" y="682" text-anchor="middle" font-size="10" fill="#212529">SWITCHBACK_ADDRESS=0</text>
+  <text x="400" y="682" text-anchor="middle" font-size="10" fill="#1a7a8a" font-weight="600">0x12  (PicketStatus8)</text>
+  <text x="620" y="682" text-anchor="middle" font-size="10" fill="#b86e00" font-weight="600">0x25</text>
+  <text x="820" y="682" text-anchor="middle" font-size="10" fill="#b86e00" font-weight="600">0x28</text>
+
+  <!-- Row 1 -->
+  <text x="170" y="700" text-anchor="middle" font-size="10" fill="#212529">SWITCHBACK_ADDRESS=1</text>
+  <text x="400" y="700" text-anchor="middle" font-size="10" fill="#1a7a8a" font-weight="600">0x13  (PicketStatus9)</text>
+  <text x="620" y="700" text-anchor="middle" font-size="10" fill="#b86e00" font-weight="600">0x26</text>
+  <text x="820" y="700" text-anchor="middle" font-size="10" fill="#b86e00" font-weight="600">0x29</text>
+
+  <!-- Row 2 -->
+  <text x="170" y="718" text-anchor="middle" font-size="10" fill="#212529">SWITCHBACK_ADDRESS=2</text>
+  <text x="400" y="718" text-anchor="middle" font-size="10" fill="#1a7a8a" font-weight="600">0x14  (PicketStatus10)</text>
+  <text x="620" y="718" text-anchor="middle" font-size="10" fill="#b86e00" font-weight="600">0x27</text>
+  <text x="820" y="718" text-anchor="middle" font-size="10" fill="#b86e00" font-weight="600">0x2A</text>
+
+  <!-- Footer -->
+  <rect y="750" width="1100" height="30" fill="#ffffff"/>
+  <rect y="750" width="1100" height="1" fill="#dee2e6"/>
+  <text x="24" y="769" font-size="9" fill="#52a441" font-weight="600">TrailCurrent</text>
+  <text x="110" y="769" font-size="9" fill="#6c757d">Switchback v1.0 — DI wiring &amp; CAN reference</text>
+
+  <!-- =============== LEGEND =============== -->
+  <rect x="850" y="64" width="226" height="20" fill="#ffffff" stroke="#dee2e6" stroke-width="1" rx="4"/>
+  <rect x="858" y="68" width="10" height="12" fill="#1a7a8a" rx="2"/>
+  <text x="872" y="78" font-size="9" fill="#212529">DI / Reed</text>
+  <rect x="924" y="68" width="10" height="12" fill="#b86e00" rx="2"/>
+  <text x="938" y="78" font-size="9" fill="#212529">Relay</text>
+  <rect x="978" y="68" width="10" height="12" fill="#ff5453" rx="2"/>
+  <text x="992" y="78" font-size="9" fill="#212529">Power</text>
+  <rect x="1028" y="68" width="10" height="12" fill="#52a441" rx="2"/>
+  <text x="1042" y="78" font-size="9" fill="#212529">CAN</text>
+</svg>

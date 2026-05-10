@@ -61,6 +61,11 @@ static const gpio_num_t DIN_PINS[NUM_DIN] = {
 #define CAN_ID_DISCOVERY_TRIGGER 0x02
 #define CAN_ID_TOGGLE_BASE      0x25   // + SWITCHBACK_ADDRESS → 0x25-0x27
 #define CAN_ID_STATUS_BASE      0x28   // + SWITCHBACK_ADDRESS → 0x28-0x2A
+// Reed-switch / digital-input broadcast — Picket-format frame, 5 Hz.
+// Lives in the Picket address pool 0x0A-0x14 (Picket fills 0x0A-0x11; Switchback
+// extends with addresses 8-10 at 0x12-0x14). Identical 2-byte wire layout, so any
+// PicketStatus consumer decodes Switchback DIs without code changes.
+#define CAN_ID_INPUT_BASE       0x12   // + SWITCHBACK_ADDRESS → 0x12-0x14
 
 // CAN baud rate
 #define CAN_BAUD_RATE           500  // kbps

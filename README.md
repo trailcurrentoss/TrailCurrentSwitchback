@@ -4,6 +4,10 @@ CAN-controlled 8-channel relay module for the TrailCurrent ecosystem, built on t
 
 ## Hardware
 
+![Switchback pinout and reed switch wiring](DOCS/switchback-pinout.png)
+
+For a full design overview see [DOCS/Requirements/high-level-requirements.md](DOCS/Requirements/high-level-requirements.md).
+
 The Waveshare ESP32-S3-ETH-8DI-8RO-C provides:
 
 - **ESP32-S3** dual-core LX7 @ 240 MHz with WiFi and BLE
@@ -43,15 +47,19 @@ CAN bus runs at **500 kbps** in no-ACK mode.
 |--------|-----------|-------------|
 | `0x00` | RX | **OTA trigger** — 3-byte payload (MAC bytes 3-5) targets a specific device |
 | `0x01` | RX | **WiFi config** — multi-message chunked protocol to provision SSID and password |
+| `0x12 + addr` | TX | **Digital input broadcast** — 2-byte Picket-format frame (byte 0 = DI1-DI8 bitmask, byte 1 = 0x00), 5 Hz. Identical wire format to `PicketStatus0..7`, so Headwaters decodes it through the same path. |
 | `0x25 + addr` | RX | **Relay toggle** — toggle a single relay (channel 0-7) or set all relays (channel >= 8, byte 2 = on/off) |
-| `0x28 + addr` | TX | **Status broadcast** — 1-byte bitmask (bits 0-7 = relay states), sent at ~30 Hz |
+| `0x28 + addr` | TX | **Relay status broadcast** — 1-byte bitmask (bits 0-7 = relay states), sent at ~30 Hz |
 
 Up to 3 Switchback modules can share the same CAN bus. CAN IDs are offset by the `SWITCHBACK_ADDRESS` build flag:
 
 | Base ID | Addr 0 | Addr 1 | Addr 2 | Description |
 |---------|--------|--------|--------|-------------|
+| 0x12 | 0x12 | 0x13 | 0x14 | Digital input broadcast (TX) — `PicketStatus8/9/10` |
 | 0x25 | 0x25 | 0x26 | 0x27 | Relay toggle (RX) |
-| 0x28 | 0x28 | 0x29 | 0x2A | Status broadcast (TX) |
+| 0x28 | 0x28 | 0x29 | 0x2A | Relay status broadcast (TX) |
+
+The DI broadcast (CAN ID `0x12 + addr`) reuses the **Picket** message format byte-for-byte: byte 0 carries DI1-DI8 (`1` = open / no current through optocoupler, `0` = closed); byte 1 is always `0x00` (Picket uses it for inputs 9-12, which Switchback hardware doesn't expose). Inputs are debounced for 50 ms and the frame is sent at 5 Hz, matching Picket exactly. For dry-contact wiring, connect each NO reed switch between its `DIn` terminal and `DGND` — the board's internal isolated rail biases the optocoupler LEDs, so no external supply is needed. See [DOCS/switchback-pinout.png](DOCS/switchback-pinout.png) for the full wiring diagram.
 
 ### WiFi Provisioning over CAN
 

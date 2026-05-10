@@ -59,10 +59,11 @@ void app_main(void)
     discovery_init();
     ota_init();
 
-    ESP_LOGI(TAG, "Switchback address: %d (Toggle CAN: 0x%02X, Status CAN: 0x%02X)",
+    ESP_LOGI(TAG, "Switchback address: %d (Toggle CAN: 0x%02X, Status CAN: 0x%02X, Input CAN: 0x%02X)",
              SWITCHBACK_ADDRESS,
              CAN_ID_TOGGLE_BASE + SWITCHBACK_ADDRESS,
-             CAN_ID_STATUS_BASE + SWITCHBACK_ADDRESS);
+             CAN_ID_STATUS_BASE + SWITCHBACK_ADDRESS,
+             CAN_ID_INPUT_BASE + SWITCHBACK_ADDRESS);
 
     // Initialize CAN bus
     ESP_ERROR_CHECK(can_handler_init());

@@ -5,6 +5,7 @@
 #include "wifi_config.h"
 #include "discovery.h"
 #include "ota.h"
+#include "driver/gpio.h"
 #include "esp_log.h"
 #include "esp_timer.h"
 #include "driver/twai.h"
@@ -21,18 +22,36 @@ static const char *TAG = "can";
 #error "SWITCHBACK_ADDRESS must be 0-2"
 #endif
 
-#define STATUS_TX_INTERVAL_MS  33    // ~30 Hz
+#define STATUS_TX_INTERVAL_MS  33    // ~30 Hz (relay status)
+#define INPUT_TX_INTERVAL_MS   200   // 5 Hz (DI broadcast — matches Picket)
+#define INPUT_DEBOUNCE_MS      50    // matches Picket
 #define TX_PROBE_INTERVAL_MS   2000  // slow probe when no peers detected
+
+// Read the 8 digital inputs into a Picket-format bitmask.
+// Bit i = DIN_PINS[i] state. HIGH (1) = open (no current through opto), LOW (0) = closed.
+// In dry-contact mode, a reed switch wired between DIn and DGND closes the opto when the
+// magnet is present, pulling the GPIO LOW. This matches Picket's "1 = open, 0 = closed".
+static uint8_t read_digital_inputs(void)
+{
+    uint8_t state = 0;
+    for (int i = 0; i < NUM_DIN; i++) {
+        if (gpio_get_level(DIN_PINS[i]) == 1) {
+            state |= (1 << i);
+        }
+    }
+    return state;
+}
 
 esp_err_t can_handler_init(void)
 {
     esp_err_t ret = can_common_init(CAN_TX_PIN, CAN_RX_PIN);
     if (ret != ESP_OK) return ret;
 
-    ESP_LOGI(TAG, "CAN addr=%d toggle=0x%02X status=0x%02X",
+    ESP_LOGI(TAG, "CAN addr=%d toggle=0x%02X status=0x%02X input=0x%02X",
              SWITCHBACK_ADDRESS,
              CAN_ID_TOGGLE_BASE + SWITCHBACK_ADDRESS,
-             CAN_ID_STATUS_BASE + SWITCHBACK_ADDRESS);
+             CAN_ID_STATUS_BASE + SWITCHBACK_ADDRESS,
+             CAN_ID_INPUT_BASE + SWITCHBACK_ADDRESS);
     return ESP_OK;
 }
 
@@ -50,8 +69,15 @@ void can_handler_task(void *arg)
     int tx_fail_count = 0;
     const int TX_FAIL_THRESHOLD = 3;
     int64_t last_tx_us = 0;
+    int64_t last_input_tx_us = 0;
     const int64_t tx_period_us = STATUS_TX_INTERVAL_MS * 1000LL;
+    const int64_t input_tx_period_us = INPUT_TX_INTERVAL_MS * 1000LL;
     const int64_t tx_probe_period_us = TX_PROBE_INTERVAL_MS * 1000LL;
+
+    // Reed-switch / DI debounce state (Picket-format clone)
+    uint8_t last_di_raw = read_digital_inputs();
+    uint8_t di_debounced = last_di_raw;
+    int64_t last_di_change_us = esp_timer_get_time();
 
     while (1) {
         uint32_t triggered;
@@ -143,8 +169,19 @@ void can_handler_task(void *arg)
         // Check wifi config timeout
         wifi_config_check_timeout();
 
-        // --- Periodic status transmit ---
         int64_t now = esp_timer_get_time();
+
+        // --- Debounce digital inputs (Picket-format) ---
+        uint8_t raw_di = read_digital_inputs();
+        if (raw_di != last_di_raw) {
+            last_di_raw = raw_di;
+            last_di_change_us = now;
+        }
+        if ((now - last_di_change_us) >= ((int64_t)INPUT_DEBOUNCE_MS * 1000)) {
+            di_debounced = last_di_raw;
+        }
+
+        // --- Periodic relay-status transmit (~30 Hz) ---
         int64_t effective_period = (tx_state == TX_PROBING) ? tx_probe_period_us : tx_period_us;
         if (!bus_off && (now - last_tx_us >= effective_period)) {
             last_tx_us = now;
@@ -155,6 +192,22 @@ void can_handler_task(void *arg)
                 .data = { relay_get_states() },
             };
             twai_transmit(&tx_msg, 0);
+        }
+
+        // --- Periodic DI broadcast (5 Hz, Picket-format) ---
+        int64_t input_effective_period = (tx_state == TX_PROBING) ? tx_probe_period_us : input_tx_period_us;
+        if (!bus_off && (now - last_input_tx_us >= input_effective_period)) {
+            last_input_tx_us = now;
+
+            twai_message_t input_msg = {
+                .identifier = CAN_ID_INPUT_BASE + SWITCHBACK_ADDRESS,
+                .data_length_code = 2,
+                .data = {
+                    di_debounced,   // DIN1-DIN8 (matches PicketStatus DoorStatus1to8)
+                    0x00,            // Reserved (PicketStatus DoorStatus9to12 — unused on Switchback)
+                },
+            };
+            twai_transmit(&input_msg, 0);
         }
     }
 }
