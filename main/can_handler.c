@@ -77,6 +77,7 @@ void can_handler_task(void *arg)
     // Reed-switch / DI debounce state (Picket-format clone)
     uint8_t last_di_raw = read_digital_inputs();
     uint8_t di_debounced = last_di_raw;
+    uint8_t last_logged_di = ~di_debounced;  // force first log
     int64_t last_di_change_us = esp_timer_get_time();
 
     while (1) {
@@ -179,6 +180,24 @@ void can_handler_task(void *arg)
         }
         if ((now - last_di_change_us) >= ((int64_t)INPUT_DEBOUNCE_MS * 1000)) {
             di_debounced = last_di_raw;
+        }
+
+        // --- Per-input picket state log (on debounced change) ---
+        // Reed magnet present (cabinet closed) → opto closed → GPIO LOW → bit = 0
+        // Reed magnet absent  (cabinet open)   → opto open   → GPIO HIGH → bit = 1
+        if (di_debounced != last_logged_di) {
+            last_logged_di = di_debounced;
+            ESP_LOGI(TAG,
+                "picket DI=0x%02X | DI1:Cabinet %s | DI2:Cabinet %s | DI3:Cabinet %s | DI4:Cabinet %s | DI5:Cabinet %s | DI6:Cabinet %s | DI7:Cabinet %s | DI8:Cabinet %s",
+                di_debounced,
+                (di_debounced & 0x01) ? "open" : "closed",
+                (di_debounced & 0x02) ? "open" : "closed",
+                (di_debounced & 0x04) ? "open" : "closed",
+                (di_debounced & 0x08) ? "open" : "closed",
+                (di_debounced & 0x10) ? "open" : "closed",
+                (di_debounced & 0x20) ? "open" : "closed",
+                (di_debounced & 0x40) ? "open" : "closed",
+                (di_debounced & 0x80) ? "open" : "closed");
         }
 
         // --- Periodic relay-status transmit (~30 Hz) ---

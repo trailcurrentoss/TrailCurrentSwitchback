@@ -28,7 +28,7 @@ for addr in $(seq 0 $MAX_ADDR); do
 
     # Create merged binary (for web flasher — flashable at 0x0)
     esptool.py --chip esp32s3 merge_bin -o "$OUTPUT_DIR/switchback_addr${addr}_merged.bin" \
-        --flash_mode dio --flash_size 8MB \
+        --flash_mode dio --flash_size 16MB \
         0x0 "$OUTPUT_DIR/bootloader/bootloader.bin" \
         0x8000 "$OUTPUT_DIR/partition_table/partition-table.bin" \
         0xe000 "$OUTPUT_DIR/ota_data_initial.bin" \
