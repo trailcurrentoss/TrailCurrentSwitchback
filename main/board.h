@@ -69,3 +69,27 @@ static const gpio_num_t DIN_PINS[NUM_DIN] = {
 
 // CAN baud rate
 #define CAN_BAUD_RATE           500  // kbps
+
+// --- Aftline variant (SWITCHBACK_VARIANT=aftline) ---
+// Fixed DI-to-trailer-signal mapping. DI6-DI8 unused in aftline mode.
+// Trailer wire carrying 12V → opto conducts → GPIO LOW → signal_asserted = true.
+#ifdef SWITCHBACK_VARIANT_AFTLINE
+#define AFTLINE_DI_CONNECTED       DI1_PIN
+#define AFTLINE_DI_LEFT_TURN       DI2_PIN
+#define AFTLINE_DI_RIGHT_TURN      DI3_PIN
+#define AFTLINE_DI_RUNNING_LIGHTS  DI4_PIN
+#define AFTLINE_DI_BRAKES          DI5_PIN
+
+// ADC input for TrailerVoltageMv, fed from a custom voltage-divider PCB on
+// the internal header. Must be an ADC-capable GPIO (ADC1: 1-10, ADC2: 11-20)
+// not already used by DI1-8, Ethernet, CAN, I2C, buzzer, or RGB LED.
+#if !defined(AFTLINE_ADC_GPIO) || !defined(AFTLINE_ADC_CHANNEL) || !defined(AFTLINE_ADC_UNIT)
+#error "SWITCHBACK_VARIANT=aftline requires AFTLINE_ADC_GPIO, AFTLINE_ADC_CHANNEL, and AFTLINE_ADC_UNIT to be defined here in board.h. Check the Waveshare ESP32-S3-ETH-8DI-8RO-C internal header pinout, pick an unused ADC-capable GPIO, and set all three. Also set AFTLINE_ADC_DIVIDER_RATIO to match the custom PCB."
+#endif
+
+// Voltage divider ratio (Vin / Vout). ADC reads mV at the pin; multiply by
+// this ratio to recover the trailer voltage. Example: 5:1 divider → 5.
+#ifndef AFTLINE_ADC_DIVIDER_RATIO
+#define AFTLINE_ADC_DIVIDER_RATIO  5
+#endif
+#endif  // SWITCHBACK_VARIANT_AFTLINE
