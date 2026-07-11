@@ -77,6 +77,32 @@ static const gpio_num_t DIN_PINS[NUM_DIN] = {
 #define CAN_ID_ALTITUDE         0x08
 #define CAN_ID_LATLON           0x09
 
+// Environmental broadcast (picket_gnss variant only, when SCD41+SGP40 are
+// attached). Same wire layout as standalone Borealis EnvironmentalStatus.
+// Don't run a picket_gnss Switchback and a standalone Borealis on the same
+// bus — both would broadcast 0x1F / 0x20.
+#define CAN_ID_ENVIRONMENTAL    0x1F
+#define CAN_ID_SAFETY           0x20
+
+// Alarm bitmask packed into the SafetyStatus frame. Matches Borealis so
+// existing dashboards decode it unchanged. LPG bits stay zero because
+// Switchback carries no MQ-6 propane sensor.
+#define ALARM_FLAG_CO_WARN      0x01
+#define ALARM_FLAG_CO_ALARM     0x02
+#define ALARM_FLAG_LPG_WARN     0x04
+#define ALARM_FLAG_LPG_ALARM    0x08
+#define ALARM_FLAG_CO2_WARN     0x10
+#define ALARM_FLAG_CO2_ALARM    0x20
+#define ALARM_FLAG_VOC_ALARM    0x40
+
+// Thresholds — same values Borealis uses so a single dashboard config works
+// across every TrailCurrent module.
+#define CO_PPM_WARNING          70
+#define CO_PPM_ALARM            200
+#define CO2_PPM_WARNING         1500
+#define CO2_PPM_ALARM           2500
+#define VOC_INDEX_ALARM         400
+
 // CAN baud rate
 #define CAN_BAUD_RATE           500  // kbps
 

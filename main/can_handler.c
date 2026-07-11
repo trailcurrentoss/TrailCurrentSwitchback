@@ -18,6 +18,9 @@
 #include <string.h>
 #include "gnss.h"
 #endif
+#ifdef SWITCHBACK_VARIANT_SCD41
+#include "sensors.h"
+#endif
 
 static const char *TAG = "can";
 
@@ -108,6 +111,70 @@ static void encode_lat_lon(float value, uint8_t out[4])
     out[3] = scaled & 0xFF;
 }
 #endif  // SWITCHBACK_VARIANT_GNSS
+
+#ifdef SWITCHBACK_VARIANT_SCD41
+#define ENV_TX_INTERVAL_MS     1000  // 1 Hz — matches standalone Borealis
+
+static portMUX_TYPE g_env_mux = portMUX_INITIALIZER_UNLOCKED;
+static int8_t   g_env_temp_c_int;
+static int8_t   g_env_temp_f_int;
+static uint16_t g_env_humidity_scaled;   // %RH × 100
+static uint16_t g_env_co2_ppm;
+static uint16_t g_env_voc_index;         // 0 = never seen; 1-500 valid range
+static bool     g_env_valid;
+
+void can_handler_publish_env(const scd41_data_t *data)
+{
+    if (!data || !data->valid) return;
+    float tF = data->temperature_c * 9.0f / 5.0f + 32.0f;
+    taskENTER_CRITICAL(&g_env_mux);
+    g_env_temp_c_int      = (int8_t)(data->temperature_c + 0.5f);
+    g_env_temp_f_int      = (int8_t)(tF + 0.5f);
+    g_env_humidity_scaled = (uint16_t)(data->humidity * 100.0f);
+    g_env_co2_ppm         = data->co2_ppm;
+    g_env_valid           = true;
+    taskEXIT_CRITICAL(&g_env_mux);
+}
+
+void can_handler_publish_voc(const sgp40_data_t *data)
+{
+    if (!data || !data->valid) return;
+    taskENTER_CRITICAL(&g_env_mux);
+    g_env_voc_index = data->voc_index;
+    taskEXIT_CRITICAL(&g_env_mux);
+}
+
+// --- Safety snapshot (CO + alarm flags) ---
+static portMUX_TYPE g_safety_mux = portMUX_INITIALIZER_UNLOCKED;
+static uint16_t g_co_ppm;
+static bool     g_safety_valid;
+
+void can_handler_publish_co(const co_data_t *data)
+{
+    if (!data || !data->valid) return;
+    uint16_t co_rounded = (uint16_t)(data->ppm + 0.5f);
+    taskENTER_CRITICAL(&g_safety_mux);
+    g_co_ppm       = co_rounded;
+    g_safety_valid = true;
+    taskEXIT_CRITICAL(&g_safety_mux);
+}
+
+// Recompute the alarm bitmask from the latest environmental + safety values.
+// Called from the TX loop under both spinlocks so the flags are consistent
+// with what actually gets transmitted.
+static uint8_t compute_alarm_flags(uint16_t co_ppm, uint16_t co2_ppm, uint16_t voc_index)
+{
+    uint8_t f = 0;
+    if (co_ppm >= CO_PPM_ALARM)        f |= ALARM_FLAG_CO_ALARM;
+    else if (co_ppm >= CO_PPM_WARNING) f |= ALARM_FLAG_CO_WARN;
+
+    if (co2_ppm >= CO2_PPM_ALARM)         f |= ALARM_FLAG_CO2_ALARM;
+    else if (co2_ppm >= CO2_PPM_WARNING)  f |= ALARM_FLAG_CO2_WARN;
+
+    if (voc_index >= VOC_INDEX_ALARM) f |= ALARM_FLAG_VOC_ALARM;
+    return f;
+}
+#endif  // SWITCHBACK_VARIANT_SCD41
 
 #ifdef SWITCHBACK_VARIANT_AFTLINE
 #define AFTLINE_TX_INTERVAL_MS 33    // 30 Hz — matches standalone Aftline
@@ -216,6 +283,11 @@ void can_handler_task(void *arg)
     // when the CAN bus is disconnected (TX_FAILED silently keeps firing).
     int64_t last_gnss_log_us = 0;
     const int64_t gnss_log_period_us = 1000000LL;
+#endif
+
+#ifdef SWITCHBACK_VARIANT_SCD41
+    int64_t last_env_tx_us = 0;
+    const int64_t env_tx_period_us = ENV_TX_INTERVAL_MS * 1000LL;
 #endif
 
     while (1) {
@@ -468,6 +540,71 @@ void can_handler_task(void *arg)
             }
         }
 #endif  // SWITCHBACK_VARIANT_GNSS
+
+#ifdef SWITCHBACK_VARIANT_SCD41
+        // --- Periodic environmental broadcast (1 Hz, Borealis-format 0x1F) ---
+        int64_t env_effective_period = (tx_state == TX_PROBING) ? tx_probe_period_us : env_tx_period_us;
+        if (!bus_off && (now - last_env_tx_us >= env_effective_period)) {
+            last_env_tx_us = now;
+
+            int8_t   temp_c, temp_f;
+            uint16_t hum, co2, voc;
+            bool valid;
+            taskENTER_CRITICAL(&g_env_mux);
+            valid  = g_env_valid;
+            temp_c = g_env_temp_c_int;
+            temp_f = g_env_temp_f_int;
+            hum    = g_env_humidity_scaled;
+            co2    = g_env_co2_ppm;
+            voc    = g_env_voc_index;
+            taskEXIT_CRITICAL(&g_env_mux);
+
+            if (valid) {
+                // Layout matches Borealis EnvironmentalStatus. VOC bytes stay
+                // zero until the first SGP40 measurement completes.
+                twai_message_t env_msg = {
+                    .identifier = CAN_ID_ENVIRONMENTAL,
+                    .data_length_code = 8,
+                    .data = {
+                        (uint8_t)temp_c,
+                        (uint8_t)temp_f,
+                        (hum >> 8) & 0xFF, hum & 0xFF,
+                        (co2 >> 8) & 0xFF, co2 & 0xFF,
+                        (voc >> 8) & 0xFF, voc & 0xFF,
+                    },
+                };
+                twai_transmit(&env_msg, 0);
+            }
+
+            // Safety frame piggybacks on the same 1 Hz cadence. Alarm flags
+            // combine CO (SEN0466) with CO2 and VOC (already snapshotted
+            // above), so they're always consistent with the 0x1F payload we
+            // just sent.
+            uint16_t co_ppm;
+            bool safety_valid;
+            taskENTER_CRITICAL(&g_safety_mux);
+            safety_valid = g_safety_valid;
+            co_ppm       = g_co_ppm;
+            taskEXIT_CRITICAL(&g_safety_mux);
+
+            if (safety_valid) {
+                uint8_t flags = compute_alarm_flags(co_ppm, co2, voc);
+                // Bytes 2-3 reserved for LPG Rs/R0 × 1000 (Borealis MQ-6);
+                // stay zero because Switchback has no MQ-6.
+                twai_message_t safety_msg = {
+                    .identifier = CAN_ID_SAFETY,
+                    .data_length_code = 8,
+                    .data = {
+                        (co_ppm >> 8) & 0xFF, co_ppm & 0xFF,
+                        0x00, 0x00,
+                        flags,
+                        0x00, 0x00, 0x00,
+                    },
+                };
+                twai_transmit(&safety_msg, 0);
+            }
+        }
+#endif  // SWITCHBACK_VARIANT_SCD41
 
 #ifdef SWITCHBACK_VARIANT_AFTLINE
         // --- Periodic TrailerStatus broadcast (30 Hz, DBC BO_ 58, 0x3A) ---

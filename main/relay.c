@@ -108,3 +108,8 @@ uint8_t relay_get_states(void)
 {
     return relay_states;
 }
+
+i2c_master_bus_handle_t relay_get_i2c_bus(void)
+{
+    return i2c_bus;
+}
