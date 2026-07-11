@@ -14,6 +14,10 @@
 #ifdef SWITCHBACK_VARIANT_AFTLINE
 #include "esp_adc/adc_oneshot.h"
 #endif
+#ifdef SWITCHBACK_VARIANT_GNSS
+#include <string.h>
+#include "gnss.h"
+#endif
 
 static const char *TAG = "can";
 
@@ -47,6 +51,63 @@ static uint8_t read_digital_inputs(void)
     return state;
 }
 #endif  // SWITCHBACK_VARIANT_PICKET
+
+#ifdef SWITCHBACK_VARIANT_GNSS
+#define GNSS_TX_INTERVAL_MS    33    // 30 Hz — matches standalone Bearing
+
+// Snapshot buffer for the CAN TX task. Written by the main-task GNSS poll
+// via can_handler_publish_gnss, drained by the TX loop under a spinlock so
+// no consumer ever sees mixed minute/second across a fix rollover.
+static portMUX_TYPE g_gnss_mux = portMUX_INITIALIZER_UNLOCKED;
+static uint16_t g_gnss_year;
+static uint8_t  g_gnss_month, g_gnss_day, g_gnss_hour, g_gnss_minute, g_gnss_second;
+static float    g_gnss_latitude, g_gnss_longitude;
+static double   g_gnss_altitude, g_gnss_speed, g_gnss_course;
+static uint8_t  g_gnss_satellites, g_gnss_mode;
+
+void can_handler_publish_gnss(const gnss_data_t *data)
+{
+    // Suppress obviously-invalid date/time (module reports 2000-00-00 during
+    // cold start before it has any satellites) — retain the last good stamp
+    // so downstream consumers don't jump backwards on every reboot.
+    bool date_valid =
+        data->year  >= 2025 && data->year  <= 2099 &&
+        data->month >= 1    && data->month <= 12 &&
+        data->day   >= 1    && data->day   <= 31 &&
+        data->hour  <= 23 &&
+        data->minute <= 59 &&
+        data->second <= 60;
+
+    taskENTER_CRITICAL(&g_gnss_mux);
+    if (date_valid) {
+        g_gnss_year   = data->year;
+        g_gnss_month  = data->month;
+        g_gnss_day    = data->day;
+        g_gnss_hour   = data->hour;
+        g_gnss_minute = data->minute;
+        g_gnss_second = data->second;
+    }
+    g_gnss_latitude   = data->latitude;
+    g_gnss_longitude  = data->longitude;
+    g_gnss_altitude   = data->altitude;
+    g_gnss_satellites = data->satellites;
+    g_gnss_speed      = data->speed;
+    g_gnss_course     = data->course;
+    g_gnss_mode       = data->gnss_mode;
+    taskEXIT_CRITICAL(&g_gnss_mux);
+}
+
+// Bearing wire format — sign flag + 24-bit unsigned |value|*10000.
+static void encode_lat_lon(float value, uint8_t out[4])
+{
+    out[0] = (value < 0) ? 1 : 0;
+    if (value < 0) value = -value;
+    uint32_t scaled = (uint32_t)(value * 10000.0f + 0.5f);
+    out[1] = (scaled >> 16) & 0xFF;
+    out[2] = (scaled >> 8) & 0xFF;
+    out[3] = scaled & 0xFF;
+}
+#endif  // SWITCHBACK_VARIANT_GNSS
 
 #ifdef SWITCHBACK_VARIANT_AFTLINE
 #define AFTLINE_TX_INTERVAL_MS 33    // 30 Hz — matches standalone Aftline
@@ -87,6 +148,13 @@ esp_err_t can_handler_init(void)
              CAN_ID_TOGGLE_BASE + SWITCHBACK_ADDRESS,
              CAN_ID_STATUS_BASE + SWITCHBACK_ADDRESS,
              CAN_ID_TRAILER_STATUS);
+#elif defined(SWITCHBACK_VARIANT_PICKET) && defined(SWITCHBACK_VARIANT_GNSS)
+    ESP_LOGI(TAG, "CAN addr=%d toggle=0x%02X status=0x%02X input=0x%02X GNSS=0x%02X/0x%02X/0x%02X/0x%02X (picket_gnss)",
+             SWITCHBACK_ADDRESS,
+             CAN_ID_TOGGLE_BASE + SWITCHBACK_ADDRESS,
+             CAN_ID_STATUS_BASE + SWITCHBACK_ADDRESS,
+             CAN_ID_INPUT_BASE + SWITCHBACK_ADDRESS,
+             CAN_ID_DATETIME, CAN_ID_SAT_SPEED, CAN_ID_ALTITUDE, CAN_ID_LATLON);
 #elif defined(SWITCHBACK_VARIANT_PICKET)
     ESP_LOGI(TAG, "CAN addr=%d toggle=0x%02X status=0x%02X input=0x%02X (picket)",
              SWITCHBACK_ADDRESS,
@@ -119,6 +187,12 @@ void can_handler_task(void *arg)
     const int64_t tx_period_us = STATUS_TX_INTERVAL_MS * 1000LL;
     const int64_t tx_probe_period_us = TX_PROBE_INTERVAL_MS * 1000LL;
 
+    // Per-second heartbeat log — visible even with no CAN peer on the bus.
+    // Shows relay byte + TX state (+ DI/aftline state on those variants) so
+    // an operator can confirm bench operation without a CAN analyzer.
+    int64_t last_heartbeat_us = 0;
+    const int64_t heartbeat_period_us = 1000000LL;
+
 #ifdef SWITCHBACK_VARIANT_PICKET
     int64_t last_input_tx_us = 0;
     const int64_t input_tx_period_us = INPUT_TX_INTERVAL_MS * 1000LL;
@@ -133,6 +207,15 @@ void can_handler_task(void *arg)
 #ifdef SWITCHBACK_VARIANT_AFTLINE
     int64_t last_aftline_tx_us = 0;
     const int64_t aftline_tx_period_us = AFTLINE_TX_INTERVAL_MS * 1000LL;
+#endif
+
+#ifdef SWITCHBACK_VARIANT_GNSS
+    int64_t last_gnss_tx_us = 0;
+    const int64_t gnss_tx_period_us = GNSS_TX_INTERVAL_MS * 1000LL;
+    // Periodic "tx heartbeat" log so we can see the module is running even
+    // when the CAN bus is disconnected (TX_FAILED silently keeps firing).
+    int64_t last_gnss_log_us = 0;
+    const int64_t gnss_log_period_us = 1000000LL;
 #endif
 
     while (1) {
@@ -270,6 +353,19 @@ void can_handler_task(void *arg)
             twai_transmit(&tx_msg, 0);
         }
 
+        // --- Per-second heartbeat log (visible without a CAN peer) ---
+        if (now - last_heartbeat_us >= heartbeat_period_us) {
+            last_heartbeat_us = now;
+            const char *tx_str = bus_off ? "bus_off"
+                              : (tx_state == TX_PROBING) ? "probing" : "active";
+#if defined(SWITCHBACK_VARIANT_PICKET)
+            ESP_LOGI(TAG, "hb: relay=0x%02X di=0x%02X tx=%s",
+                     relay_get_states(), di_debounced, tx_str);
+#else
+            ESP_LOGI(TAG, "hb: relay=0x%02X tx=%s", relay_get_states(), tx_str);
+#endif
+        }
+
 #ifdef SWITCHBACK_VARIANT_PICKET
         // --- Periodic DI broadcast (5 Hz, Picket-format) ---
         int64_t input_effective_period = (tx_state == TX_PROBING) ? tx_probe_period_us : input_tx_period_us;
@@ -287,6 +383,91 @@ void can_handler_task(void *arg)
             twai_transmit(&input_msg, 0);
         }
 #endif  // SWITCHBACK_VARIANT_PICKET
+
+#ifdef SWITCHBACK_VARIANT_GNSS
+        // --- Periodic GNSS broadcast (30 Hz, Bearing-format 0x06-0x09) ---
+        int64_t gnss_effective_period = (tx_state == TX_PROBING) ? tx_probe_period_us : gnss_tx_period_us;
+        if (!bus_off && (now - last_gnss_tx_us >= gnss_effective_period)) {
+            last_gnss_tx_us = now;
+
+            uint16_t year;
+            uint8_t month, day, hour, minute, second;
+            float lat, lon;
+            double alt, spd, crs;
+            uint8_t sats, mode;
+            taskENTER_CRITICAL(&g_gnss_mux);
+            year = g_gnss_year;
+            month = g_gnss_month; day = g_gnss_day;
+            hour = g_gnss_hour; minute = g_gnss_minute; second = g_gnss_second;
+            lat = g_gnss_latitude; lon = g_gnss_longitude;
+            alt = g_gnss_altitude; spd = g_gnss_speed; crs = g_gnss_course;
+            sats = g_gnss_satellites; mode = g_gnss_mode;
+            taskEXIT_CRITICAL(&g_gnss_mux);
+
+            twai_message_t m_dt = {
+                .identifier = CAN_ID_DATETIME,
+                .data_length_code = 7,
+                .data = {
+                    (year >> 8) & 0xFF, year & 0xFF,
+                    month, day, hour, minute, second
+                }
+            };
+
+            uint16_t speed_scaled = (uint16_t)(spd * 100.0);
+            uint16_t course_scaled = (uint16_t)(crs * 10.0 + 0.5);
+            twai_message_t m_nav = {
+                .identifier = CAN_ID_SAT_SPEED,
+                .data_length_code = 6,
+                .data = {
+                    sats,
+                    (speed_scaled >> 8) & 0xFF, speed_scaled & 0xFF,
+                    (course_scaled >> 8) & 0xFF, course_scaled & 0xFF,
+                    mode
+                }
+            };
+
+            uint32_t alt_scaled = (uint32_t)(alt * 100.0);
+            twai_message_t m_alt = {
+                .identifier = CAN_ID_ALTITUDE,
+                .data_length_code = 4,
+                .data = {
+                    (alt_scaled >> 24) & 0xFF,
+                    (alt_scaled >> 16) & 0xFF,
+                    (alt_scaled >> 8) & 0xFF,
+                    alt_scaled & 0xFF
+                }
+            };
+
+            uint8_t lat_enc[4], lon_enc[4];
+            encode_lat_lon(lat, lat_enc);
+            encode_lat_lon(lon, lon_enc);
+            twai_message_t m_pos = {
+                .identifier = CAN_ID_LATLON,
+                .data_length_code = 8,
+                .data = {
+                    lat_enc[0], lat_enc[1], lat_enc[2], lat_enc[3],
+                    lon_enc[0], lon_enc[1], lon_enc[2], lon_enc[3]
+                }
+            };
+
+            twai_transmit(&m_dt, 0);
+            twai_transmit(&m_nav, 0);
+            twai_transmit(&m_alt, 0);
+            twai_transmit(&m_pos, 0);
+
+            // Heartbeat log every ~1 s so an operator watching the console
+            // (without a CAN analyzer / peer on the bus) can confirm the
+            // fresh GNSS snapshot is what would go on the wire.
+            if (now - last_gnss_log_us >= gnss_log_period_us) {
+                last_gnss_log_us = now;
+                ESP_LOGI(TAG,
+                    "gnss tx: %04u-%02u-%02u %02u:%02u:%02u sats=%u mode=%u lat=%.5f lon=%.5f alt=%.2fm spd=%.2fkt crs=%.1f (tx=%s)",
+                    year, month, day, hour, minute, second, sats, mode,
+                    (double)lat, (double)lon, alt, spd, crs,
+                    (tx_state == TX_PROBING) ? "probing" : "active");
+            }
+        }
+#endif  // SWITCHBACK_VARIANT_GNSS
 
 #ifdef SWITCHBACK_VARIANT_AFTLINE
         // --- Periodic TrailerStatus broadcast (30 Hz, DBC BO_ 58, 0x3A) ---

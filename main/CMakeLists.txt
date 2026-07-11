@@ -1,5 +1,5 @@
 idf_component_register(
-    SRCS "ota.c" "discovery.c" "main.c" "relay.c" "can_handler.c" "wifi_config.c"
+    SRCS "ota.c" "discovery.c" "main.c" "relay.c" "can_handler.c" "wifi_config.c" "gnss.c"
     INCLUDE_DIRS "."
     REQUIRES driver esp_timer nvs_flash esp_wifi esp_netif esp_eth esp_http_server esp_app_format app_update esp_adc can_common
 )
@@ -9,10 +9,14 @@ if(DEFINED SWITCHBACK_ADDRESS)
     target_compile_definitions(${COMPONENT_LIB} PRIVATE SWITCHBACK_ADDRESS=${SWITCHBACK_ADDRESS})
 endif()
 
-# Variant selector: base | picket | aftline
-#   base    — relay-only, no DI CAN broadcast
-#   picket  — 5 Hz PicketStatus8-10 (0x12-0x14), 2-byte DoorStatus format
-#   aftline — 30 Hz TrailerStatus (0x3A), 3-byte flags + trailer voltage
+# Variant selector: base | picket | aftline | picket_gnss
+#   base        — relay-only, no DI CAN broadcast
+#   picket      — 5 Hz PicketStatus8-10 (0x12-0x14), 2-byte DoorStatus format
+#   aftline     — 30 Hz TrailerStatus (0x3A), 3-byte flags + trailer voltage
+#   picket_gnss — picket DI broadcast + Bearing-format GNSS frames (0x06-0x09)
+#                 requires DFRobot Gravity GNSS module on the I2C header with
+#                 its address DIP switched off 0x20 (TCA9554 relay expander)
+#                 to 0x21 — see main/board.h SWITCHBACK_GNSS_I2C_ADDR.
 # Default is picket, preserving existing behavior when the flag is omitted.
 if(NOT DEFINED SWITCHBACK_VARIANT)
     set(SWITCHBACK_VARIANT "picket")
@@ -23,6 +27,8 @@ elseif(SWITCHBACK_VARIANT STREQUAL "picket")
     target_compile_definitions(${COMPONENT_LIB} PRIVATE SWITCHBACK_VARIANT_PICKET=1)
 elseif(SWITCHBACK_VARIANT STREQUAL "aftline")
     target_compile_definitions(${COMPONENT_LIB} PRIVATE SWITCHBACK_VARIANT_AFTLINE=1)
+elseif(SWITCHBACK_VARIANT STREQUAL "picket_gnss")
+    target_compile_definitions(${COMPONENT_LIB} PRIVATE SWITCHBACK_VARIANT_PICKET=1 SWITCHBACK_VARIANT_GNSS=1)
 else()
-    message(FATAL_ERROR "SWITCHBACK_VARIANT must be base, picket, or aftline (got: ${SWITCHBACK_VARIANT})")
+    message(FATAL_ERROR "SWITCHBACK_VARIANT must be base, picket, aftline, or picket_gnss (got: ${SWITCHBACK_VARIANT})")
 endif()

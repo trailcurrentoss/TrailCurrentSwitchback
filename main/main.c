@@ -8,12 +8,24 @@
 #include "driver/gpio.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#ifdef SWITCHBACK_VARIANT_GNSS
+#include "gnss.h"
+#endif
 
 #ifndef SWITCHBACK_ADDRESS
 #define SWITCHBACK_ADDRESS 0
 #endif
 
 static const char *TAG = "main";
+
+#ifdef SWITCHBACK_VARIANT_GNSS
+// Bridge from the gnss RX task straight into the CAN handler's snapshot.
+// Fires once per NMEA sentence (RMC + GGA at 1 Hz) — no polling.
+static void on_gnss_update(const gnss_data_t *data)
+{
+    can_handler_publish_gnss(data);
+}
+#endif  // SWITCHBACK_VARIANT_GNSS
 
 static void init_digital_inputs(void)
 {
@@ -64,6 +76,12 @@ void app_main(void)
              SWITCHBACK_ADDRESS,
              CAN_ID_TOGGLE_BASE + SWITCHBACK_ADDRESS,
              CAN_ID_STATUS_BASE + SWITCHBACK_ADDRESS);
+#elif defined(SWITCHBACK_VARIANT_PICKET) && defined(SWITCHBACK_VARIANT_GNSS)
+    ESP_LOGI(TAG, "Switchback+Picket+GNSS addr=%d (Toggle 0x%02X, Status 0x%02X, Input 0x%02X, GNSS 0x06-0x09)",
+             SWITCHBACK_ADDRESS,
+             CAN_ID_TOGGLE_BASE + SWITCHBACK_ADDRESS,
+             CAN_ID_STATUS_BASE + SWITCHBACK_ADDRESS,
+             CAN_ID_INPUT_BASE + SWITCHBACK_ADDRESS);
 #elif defined(SWITCHBACK_VARIANT_PICKET)
     ESP_LOGI(TAG, "Switchback+Picket addr=%d (Toggle 0x%02X, Status 0x%02X, Input 0x%02X)",
              SWITCHBACK_ADDRESS,
@@ -80,8 +98,19 @@ void app_main(void)
     // Initialize CAN bus
     ESP_ERROR_CHECK(can_handler_init());
 
-    ESP_LOGI(TAG, "=== Setup Complete ===");
-
     // Run CAN handler on a dedicated task
     xTaskCreatePinnedToCore(can_handler_task, "can_task", 4096, NULL, 5, NULL, 1);
+
+#ifdef SWITCHBACK_VARIANT_GNSS
+    // DFRobot Gravity GNSS module in UART mode — 9600 baud NMEA. Header pin
+    // wiring: D/T (module TX) → ESP RX; C/R (module RX) → ESP TX. UART1 via
+    // the GPIO matrix keeps UART0/console untouched.
+    ESP_ERROR_CHECK(gnss_init(SWITCHBACK_GNSS_UART_NUM,
+                              SWITCHBACK_GNSS_UART_TX,
+                              SWITCHBACK_GNSS_UART_RX,
+                              SWITCHBACK_GNSS_BAUD,
+                              on_gnss_update));
+#endif
+
+    ESP_LOGI(TAG, "=== Setup Complete ===");
 }

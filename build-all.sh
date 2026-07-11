@@ -1,9 +1,14 @@
 #!/bin/bash
 # Build all Switchback address × variant combinations.
 # Variants:
-#   base    — relay-only, no DI CAN broadcast
-#   picket  — 5 Hz PicketStatus8-10 (0x12-0x14), 2-byte DoorStatus format
-#   aftline — 30 Hz TrailerStatus (0x3A), 3-byte flags + trailer voltage
+#   base        — relay-only, no DI CAN broadcast
+#   picket      — 5 Hz PicketStatus8-10 (0x12-0x14), 2-byte DoorStatus format
+#   aftline     — 30 Hz TrailerStatus (0x3A), 3-byte flags + trailer voltage
+#   picket_gnss — picket DI broadcast + 30 Hz Bearing-format GNSS
+#                 (0x06 DateTime, 0x07 SatSpeed, 0x08 Altitude, 0x09 LatLon).
+#                 Requires DFRobot Gravity GNSS on the I2C header with the
+#                 module's address DIP switched to 0x21 (0x20 collides with
+#                 the onboard TCA9554 relay expander).
 #
 # Produces two binaries per (address, variant):
 #   build/switchback_addr{N}_{variant}.bin         — app-only (for OTA via Headwaters)
@@ -20,7 +25,7 @@
 set -e
 
 MAX_ADDR=2
-VARIANTS=(base picket aftline)
+VARIANTS=(base picket aftline picket_gnss)
 OUTPUT_DIR="build"
 
 for variant in "${VARIANTS[@]}"; do

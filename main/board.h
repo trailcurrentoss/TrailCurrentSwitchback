@@ -3,6 +3,7 @@
 #include "driver/gpio.h"
 #include "driver/i2c_master.h"
 #include "driver/twai.h"
+#include "driver/uart.h"
 
 // --- Waveshare ESP32-S3-ETH-8DI-8RO-C pin assignments ---
 
@@ -67,8 +68,36 @@ static const gpio_num_t DIN_PINS[NUM_DIN] = {
 // PicketStatus consumer decodes Switchback DIs without code changes.
 #define CAN_ID_INPUT_BASE       0x12   // + SWITCHBACK_ADDRESS → 0x12-0x14
 
+// Bearing-format GNSS broadcast (picket_gnss variant only). Same wire layout
+// as standalone Bearing modules, so any GNSS consumer decodes these without
+// changes. Do NOT run a picket_gnss Switchback and a standalone Bearing on
+// the same CAN bus — both would broadcast the same IDs.
+#define CAN_ID_DATETIME         0x06
+#define CAN_ID_SAT_SPEED        0x07
+#define CAN_ID_ALTITUDE         0x08
+#define CAN_ID_LATLON           0x09
+
 // CAN baud rate
 #define CAN_BAUD_RATE           500  // kbps
+
+// --- picket_gnss variant (SWITCHBACK_VARIANT_GNSS defined) ---
+// DFRobot Gravity GNSS (TEL0157) via UART1 on the header. Uses DFRobot's
+// proprietary register-over-UART protocol (see gnss.c), NOT NMEA — the
+// module is silent until commanded.
+//
+// Wiring (bottom row of the Waveshare internal header, adjacent pins so a
+// 2-pin housing fits directly, and neither pin conflicts with anything —
+// SD-MMC / ETH / CAN / I2C / RGB / buzzer / RTC / USB are all elsewhere).
+//   Header pin labeled "2" (GPIO2, ADC1_CH1) ← module D/T (module TX output)
+//   Header pin labeled "1" (GPIO1, ADC1_CH0) → module C/R (module RX input)
+//   Any G  → module GND
+//   Any 3V3 → module VCC
+#ifdef SWITCHBACK_VARIANT_GNSS
+#define SWITCHBACK_GNSS_UART_NUM  UART_NUM_1
+#define SWITCHBACK_GNSS_UART_TX   GPIO_NUM_1    // ESP32 TX → module C/R (RX)
+#define SWITCHBACK_GNSS_UART_RX   GPIO_NUM_2    // ESP32 RX ← module D/T (TX)
+#define SWITCHBACK_GNSS_BAUD      9600
+#endif
 
 // --- Aftline variant (SWITCHBACK_VARIANT=aftline) ---
 // Fixed DI-to-trailer-signal mapping. DI6-DI8 unused in aftline mode.
