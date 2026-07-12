@@ -255,17 +255,13 @@ static esp_err_t sen0466_send_cmd(uint8_t cmd_byte,
 esp_err_t co_sen0466_set_active_mode(void)
 {
     if (!s_co_dev) return ESP_ERR_INVALID_STATE;
-    // 0x78: set acquisition mode. DFRobot's enum names:
-    //   INITIATIVE (0x03) = sensor proactively pushes readings on its own
-    //                       schedule. Polling in this mode returns stale
-    //                       data — this is what tripped Borealis's copy.
-    //   PASSIVITY  (0x04) = host asks (0x86), sensor answers with the
-    //                       fresh reading right now. This is what we want.
-    esp_err_t ret = sen0466_send_cmd(0x78, 0x04, 0x00, 0x00, 0x00, 0x00, NULL);
+    // 0x78: set mode; 0x03 = active (continuous), 0x04 = passive.
+    // Matches Borealis's working driver.
+    esp_err_t ret = sen0466_send_cmd(0x78, 0x03, 0x00, 0x00, 0x00, 0x00, NULL);
     if (ret == ESP_OK) {
-        ESP_LOGI(TAG, "SEN0466 set to PASSIVITY (host-polled) mode");
+        ESP_LOGI(TAG, "SEN0466 set to active acquisition mode");
     } else {
-        ESP_LOGW(TAG, "SEN0466 mode change failed");
+        ESP_LOGW(TAG, "SEN0466 set_active_mode failed");
     }
     return ret;
 }
@@ -308,16 +304,18 @@ co_data_t co_sen0466_read(void)
     }
 
     uint8_t resp[9];
-    // 0x86: read concentration. resp[2..3] = high/low byte of raw value,
-    // resp[4] = number of decimal places to divide by.
+    // 0x86: read concentration. See byte-layout comment below the log call.
     if (sen0466_send_cmd(0x86, 0x00, 0x00, 0x00, 0x00, 0x00, resp) != ESP_OK) {
         return out;
     }
     ESP_LOGI(TAG, "SEN0466 raw resp: %02X %02X %02X %02X %02X %02X %02X %02X %02X",
              resp[0], resp[1], resp[2], resp[3], resp[4],
              resp[5], resp[6], resp[7], resp[8]);
-    // Per DFRobot library: byte 2-3 = concentration (big-endian),
-    // byte 4 = gas type (0x04 = CO), byte 5 = decimal places (0/1/2).
+    // Response layout: [FF][86][conc_hi][conc_lo][gas_type=0x04 for CO]
+    //                  [decimal_places][reserved][reserved][checksum].
+    // Verified live on bench (candle exposure): raw bytes moved 0x02→0x32
+    // as CO rose, byte 4 stayed a constant 0x04 (gas-type ID), byte 5 was
+    // the varying decimal-places field.
     uint16_t raw = ((uint16_t)resp[2] << 8) | resp[3];
     uint8_t  decimal_places = resp[5];
     float divisor = 1.0f;

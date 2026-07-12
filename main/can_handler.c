@@ -532,7 +532,7 @@ void can_handler_task(void *arg)
             // fresh GNSS snapshot is what would go on the wire.
             if (now - last_gnss_log_us >= gnss_log_period_us) {
                 last_gnss_log_us = now;
-                ESP_LOGI(TAG,
+                ESP_LOGD(TAG,
                     "gnss tx: %04u-%02u-%02u %02u:%02u:%02u sats=%u mode=%u lat=%.5f lon=%.5f alt=%.2fm spd=%.2fkt crs=%.1f (tx=%s)",
                     year, month, day, hour, minute, second, sats, mode,
                     (double)lat, (double)lon, alt, spd, crs,

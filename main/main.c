@@ -95,6 +95,10 @@ static void init_digital_inputs(void)
 
 void app_main(void)
 {
+    // Quiet the GNSS + RX chatter so the sensor + relay output stays readable.
+    // Errors still surface. Raise back to INFO temporarily if debugging GNSS.
+    esp_log_level_set("gnss", ESP_LOG_WARN);
+
     ESP_LOGI(TAG, "=== TrailCurrent Switchback ===");
     ESP_LOGI(TAG, "CAN-Controlled 8-Channel Relay Module");
     ESP_LOGI(TAG, "Board: Waveshare ESP32-S3-ETH-8DI-8RO-C");
